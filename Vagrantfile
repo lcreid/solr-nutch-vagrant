@@ -64,22 +64,56 @@ Vagrant.configure(2) do |config|
   # Enable provisioning with a shell script. Additional provisioners such as
   # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
   # documentation for more information about their specific syntax and use.
-  Vagrant.configure("2") do |config|
-    SOLR_URL="http://apache.mirror.iweb.ca/lucene/solr/5.0.0/solr-5.0.0-src.tgz"
-    NUTCH_URL="http://apache.parentingamerica.com/nutch/1.9/apache-nutch-1.9-bin.tar.gz"
-    SOLR_FILE=`basename "$SOLR_URL"`
-    SOLR_FILE=`basename "$NUTCH_URL"`
-    [
-      { command: "sudo apt-get install", arg: "openjdk-7-jre-headless" },
-      { command: "wget", arg: SOLR_URL },
-      { command: "tar", arg: "-xf " + SOLR_FILE },
-      { command: "wget", arg: NUTCH_URL },
-      { command: "tar", arg: "-xf " + NUTCH_FILE },
-    ].each do |x|
-      config.vm.provision "shell" do |s|
-        s.inline = x.cmd
-        s.args   = x.arg
-      end
+  solr_url = "http://apache.mirror.iweb.ca/lucene/solr/5.0.0/solr-5.0.0-src.tgz"
+  nutch_url = "http://apache.parentingamerica.com/nutch/1.9/apache-nutch-1.9-bin.tar.gz"
+  solr_file = File.basename solr_url
+  nutch_file = File.basename nutch_url
+  [
+    { command: "sudo apt-get install", arg: "openjdk-7-jre-headless" },
+    { command: "wget -nv -p $1", arg: [solr_url] },
+    { command: "tar -xf $1", arg: [solr_file] },
+    { command: "wget -nv -p $1", arg: [nutch_url] },
+    { command: "tar -xf $1", arg: [nutch_file] }
+  ].each do |x|
+    config.vm.provision "shell" do |s|
+      # puts 'inside config.vm.provision ' + x[:command] + " " + x[:arg].to_s
+      s.inline = x[:command]
+      s.args   = x[:arg]
+      # puts s.args
     end
   end
+
+  solr_dir = File.basename solr_file, ".tar.gz"
+  solr_config_dir = File.join solr_dir, "/example/solr/collection1/conf"
+  solr_schema = File.join solr_config_dir, "schema.xml"
+  nutch_dir = File.basename nutch_file, ".tar.gz"
+  nutch_config_dir = File.join nutch_dir, "/conf"
+  nutch_schema = File.join nutch_dir, "schema.xml"
+  config.vm.provision "shell", inline: "cp #{solr_schema} #{solr_schema}.original"
+  config.vm.provision "shell", inline: "cp #{nutch_schema} #{solr_schema}"
+
+=begin
+    --- /home/reid/apache-nutch-1.9/conf/schema.xml	2014-08-12 22:12:21.000000000 -0700
+    +++ schema.xml	2015-02-23 16:28:19.611069000 -0800
+    @@ -50,8 +50,8 @@
+                         catenateWords="1" catenateNumbers="1" catenateAll="0"
+                         splitOnCaseChange="1"/>
+                     <filter class="solr.LowerCaseFilterFactory"/>
+    -                <filter class="solr.EnglishPorterFilterFactory"
+    -                    protected="protwords.txt"/>
+    +                <!-- <filter class="solr.EnglishPorterFilterFactory"
+    +                    protected="protwords.txt"/> -->
+                     <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+                 </analyzer>
+             </fieldType>
+    @@ -68,6 +68,7 @@
+         <fields>
+             <field name="id" type="string" stored="true" indexed="true"
+                 required="true"/>
+    +        <field name="_version_" type="long" indexed="true" stored="true"/>
+
+             <!-- core fields -->
+             <field name="segment" type="string" stored="true" indexed="false"/>
+=end
+
 end
