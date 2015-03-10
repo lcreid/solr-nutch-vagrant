@@ -61,38 +61,47 @@ Vagrant.configure(2) do |config|
   #   push.app = "YOUR_ATLAS_USERNAME/YOUR_APPLICATION_NAME"
   # end
 
-  # Enable provisioning with a shell script. Additional provisioners such as
-  # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
-  # documentation for more information about their specific syntax and use.
-  solr_url = "http://apache.mirror.iweb.ca/lucene/solr/5.0.0/solr-5.0.0-src.tgz"
+  solr_url = "http://apache.mirror.vexxhost.com/lucene/solr/5.0.0/solr-5.0.0.tgz"
   nutch_url = "http://apache.parentingamerica.com/nutch/1.9/apache-nutch-1.9-bin.tar.gz"
   solr_file = File.basename solr_url
   nutch_file = File.basename nutch_url
-  [
-    { command: "sudo apt-get install", arg: "openjdk-7-jre-headless" },
-    { command: "wget -nv -p $1", arg: [solr_url] },
-    { command: "tar -xf $1", arg: [solr_file] },
-    { command: "wget -nv -p $1", arg: [nutch_url] },
-    { command: "tar -xf $1", arg: [nutch_file] }
-  ].each do |x|
-    config.vm.provision "shell" do |s|
-      # puts 'inside config.vm.provision ' + x[:command] + " " + x[:arg].to_s
-      s.inline = x[:command]
-      s.args   = x[:arg]
-      # puts s.args
-    end
-  end
 
-  solr_dir = File.basename solr_file, ".tar.gz"
+  config.vm.provision "java-installs",
+    type: "shell",
+    inline: "sudo apt-get -y install openjdk-7-jdk"
+
+  config.vm.provision "apache-installs", type: "shell", privileged: false, inline: <<-SHELL
+    echo Downloading and installing Apache software
+    wget -nv -N "http://apache.mirror.vexxhost.com/lucene/solr/5.0.0/solr-5.0.0.tgz"
+    tar -xf "solr-5.0.0.tgz"
+    wget -nv -N "http://apache.parentingamerica.com/nutch/1.9/apache-nutch-1.9-bin.tar.gz"
+    tar -xf "apache-nutch-1.9-bin.tar.gz"
+  SHELL
+
+  solr_dir = "solr-5.0.0"
+
+  config.vm.provision "init-solr", type: "shell", privileged: false, inline: <<-SHELL
+    # ls -l #{File.join(solr_dir, "solr/bin/solr")}
+    cd #{solr_dir}
+    echo Running solr init in $PWD
+    chmod a+x bin/solr
+    bin/solr start -e cloud -noprompt
+    bin/solr stop -all
+  SHELL
+
   solr_config_dir = File.join solr_dir, "/example/solr/collection1/conf"
   solr_schema = File.join solr_config_dir, "schema.xml"
-  nutch_dir = File.basename nutch_file, ".tar.gz"
+  nutch_dir = "apache-nutch-1.9"
   nutch_config_dir = File.join nutch_dir, "/conf"
   nutch_schema = File.join nutch_dir, "schema.xml"
-  config.vm.provision "shell", inline: "cp #{solr_schema} #{solr_schema}.original"
-  config.vm.provision "shell", inline: "cp #{nutch_schema} #{solr_schema}"
+  config.vm.provision "config-solr-for-nutch", type: "shell", privileged: false, inline: <<-SHELL
+    cp #{solr_schema} #{solr_schema}.original
+    cp #{nutch_schema} #{solr_schema}
+  SHELL
 
 =begin
+    This is the patch for solr 4. Have to check if the config for 5 is different.
+
     --- /home/reid/apache-nutch-1.9/conf/schema.xml	2014-08-12 22:12:21.000000000 -0700
     +++ schema.xml	2015-02-23 16:28:19.611069000 -0800
     @@ -50,8 +50,8 @@
