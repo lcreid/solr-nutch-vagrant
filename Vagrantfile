@@ -43,13 +43,13 @@ Vagrant.configure(2) do |config|
   # backing providers for Vagrant. These expose provider-specific options.
   # Example for VirtualBox:
   #
-  # config.vm.provider "virtualbox" do |vb|
+  config.vm.provider "virtualbox" do |vb|
   #   # Display the VirtualBox GUI when booting the machine
   #   vb.gui = true
-  #
-  #   # Customize the amount of memory on the VM:
-  #   vb.memory = "1024"
-  # end
+
+    # Solr won't start without at least a GB of RAM
+    vb.memory = "1024"
+  end
   #
   # View the documentation for the provider you are using for more
   # information on available options.
@@ -61,7 +61,7 @@ Vagrant.configure(2) do |config|
   #   push.app = "YOUR_ATLAS_USERNAME/YOUR_APPLICATION_NAME"
   # end
 
-  solr_url = "http://apache.mirror.vexxhost.com/lucene/solr/5.0.0/solr-5.0.0.tgz"
+  solr_url = "http://apache.mirror.vexxhost.com/lucene/solr/4.10.3/solr-4.10.3.tgz"
   nutch_url = "http://apache.parentingamerica.com/nutch/1.9/apache-nutch-1.9-bin.tar.gz"
   solr_file = File.basename solr_url
   nutch_file = File.basename nutch_url
@@ -72,13 +72,13 @@ Vagrant.configure(2) do |config|
 
   config.vm.provision "apache-installs", type: "shell", privileged: false, inline: <<-SHELL
     echo Downloading and installing Apache software
-    wget -nv -N "http://apache.mirror.vexxhost.com/lucene/solr/5.0.0/solr-5.0.0.tgz"
-    tar -xf "solr-5.0.0.tgz"
+    wget -nv -N "http://apache.mirror.vexxhost.com/lucene/solr/4.10.3/solr-4.10.3.tgz"
+    tar -xf "solr-4.10.3.tgz"
     wget -nv -N "http://apache.parentingamerica.com/nutch/1.9/apache-nutch-1.9-bin.tar.gz"
     tar -xf "apache-nutch-1.9-bin.tar.gz"
   SHELL
 
-  solr_dir = "solr-5.0.0"
+  solr_dir = "solr-4.10.3"
 
   config.vm.provision "init-solr", type: "shell", privileged: false, inline: <<-SHELL
     # ls -l #{File.join(solr_dir, "solr/bin/solr")}
@@ -99,30 +99,38 @@ Vagrant.configure(2) do |config|
     cp #{nutch_schema} #{solr_schema}
   SHELL
 
-=begin
-    This is the patch for solr 4. Have to check if the config for 5 is different.
+  config.vm.provision "patch", type: "shell", privileged: false, inline: <<-SHELL
+    # This is the patch for solr 4. Have to check if the config for 5 is different.
 
-    --- /home/reid/apache-nutch-1.9/conf/schema.xml	2014-08-12 22:12:21.000000000 -0700
-    +++ schema.xml	2015-02-23 16:28:19.611069000 -0800
-    @@ -50,8 +50,8 @@
-                         catenateWords="1" catenateNumbers="1" catenateAll="0"
-                         splitOnCaseChange="1"/>
-                     <filter class="solr.LowerCaseFilterFactory"/>
-    -                <filter class="solr.EnglishPorterFilterFactory"
-    -                    protected="protwords.txt"/>
-    +                <!-- <filter class="solr.EnglishPorterFilterFactory"
-    +                    protected="protwords.txt"/> -->
-                     <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
-                 </analyzer>
-             </fieldType>
-    @@ -68,6 +68,7 @@
-         <fields>
-             <field name="id" type="string" stored="true" indexed="true"
-                 required="true"/>
-    +        <field name="_version_" type="long" indexed="true" stored="true"/>
+    patch #{solr_schema} <<-EOF
+      --- /home/reid/apache-nutch-1.9/conf/schema.xml	2014-08-12 22:12:21.000000000 -0700
+      +++ schema.xml	2015-02-23 16:28:19.611069000 -0800
+      @@ -50,8 +50,8 @@
+                           catenateWords="1" catenateNumbers="1" catenateAll="0"
+                           splitOnCaseChange="1"/>
+                       <filter class="solr.LowerCaseFilterFactory"/>
+      -                <filter class="solr.EnglishPorterFilterFactory"
+      -                    protected="protwords.txt"/>
+      +                <!-- <filter class="solr.EnglishPorterFilterFactory"
+      +                    protected="protwords.txt"/> -->
+                       <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+                   </analyzer>
+               </fieldType>
+      @@ -68,6 +68,7 @@
+           <fields>
+               <field name="id" type="string" stored="true" indexed="true"
+                   required="true"/>
+      +        <field name="_version_" type="long" indexed="true" stored="true"/>
 
-             <!-- core fields -->
-             <field name="segment" type="string" stored="true" indexed="false"/>
-=end
+               <!-- core fields -->
+               <field name="segment" type="string" stored="true" indexed="false"/>
+    EOF
+  SHELL
+
+  config.vm.provision "start-solr", type: "shell", privileged: false, inline: <<-SHELL
+    cd #{solr_dir}
+    echo Starting solr for good
+    bin/solr start -e cloud -noprompt
+  SHELL
 
 end
