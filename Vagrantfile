@@ -62,14 +62,16 @@ Vagrant.configure(2) do |config|
   #   push.app = "YOUR_ATLAS_USERNAME/YOUR_APPLICATION_NAME"
   # end
 
-  solr_url = "http://apache.mirror.vexxhost.com/lucene/solr/5.0.0/solr-5.0.0.tgz"
-  nutch_url = "http://apache.parentingamerica.com/nutch/1.9/apache-nutch-1.9-bin.tar.gz"
-  solr_file = File.basename solr_url
-  nutch_file = File.basename nutch_url
+  # solr_url = "http://apache.mirror.vexxhost.com/lucene/solr/5.0.0/solr-5.0.0.tgz"
+  # nutch_url = "http://apache.parentingamerica.com/nutch/1.9/apache-nutch-1.9-bin.tar.gz"
+  # solr_file = File.basename solr_url
+  # nutch_file = File.basename nutch_url
 
   config.vm.provision "java-installs",
     type: "shell",
     inline: "sudo apt-get -y install openjdk-7-jdk"
+
+  solr_dir = "solr-5.0.0"
 
   config.vm.provision "apache-installs", type: "shell", privileged: false, inline: <<-SHELL
     echo Downloading and installing Apache software
@@ -77,24 +79,25 @@ Vagrant.configure(2) do |config|
     tar -xf "solr-5.0.0.tgz"
     wget -nv -N "http://apache.parentingamerica.com/nutch/1.9/apache-nutch-1.9-bin.tar.gz"
     tar -xf "apache-nutch-1.9-bin.tar.gz"
+    chmod a+x #{File.join solr_dir, "bin/solr"}
   SHELL
 
-  solr_dir = "solr-5.0.0"
-
-  core_dir = "/vagrant/cores/cark"
   solr_home_dir = "/vagrant/solr"
+  core_dir = "/vagrant/cores/cark"
 
   config.vm.provision "init-solr", type: "shell", privileged: false, inline: <<-SHELL
     # ls -l #{File.join(solr_dir, "solr/bin/solr")}
+    echo Running solr init in $PWD. This deletes your existing core!
     cd #{solr_dir}
-    echo Running solr init in $PWD
-    chmod a+x bin/solr
+    bin/solr stop -all
+    rm -rf #{solr_home_dir}
     mkdir -p #{solr_home_dir}
     cp -a "server/solr/solr.xml" #{solr_home_dir}
     # echo Populating #{core_dir}
     # mkdir -p #{core_dir} #{File.join core_dir, "conf"}
     # cp -ar "server/solr/configsets/basic_configs/conf" #{core_dir}
     # echo "name=cark" >#{File.join core_dir, "core.properties"}
+    # You have to start Solr before creating the core.
     bin/solr start -s #{solr_home_dir}
     bin/solr create -c cark
     # bin/solr start -e cloud -noprompt
