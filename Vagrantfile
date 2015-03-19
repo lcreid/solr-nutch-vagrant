@@ -104,10 +104,47 @@ Vagrant.configure(2) do |config|
     # bin/solr stop -all
   SHELL
 
-  solr_config_dir = File.join solr_dir, "/example/cloud/node1/conf"
+  # Config port forwarding so localhost:3000 on the Vagrant guest goes to
+  # :3000 on the Vagrant host (presumably the developer's workstation)
+  config.vm.provision "forward-port", type: "shell", inline: <<-SHELL
+    # Get the host IP by looking up the default gateway.
+    HOST_IP=`ip route | awk '/default/ { print $3 }'`
+    # TODO: No to the above. I just port forward localhost:3000 to default gateway:3000
+    # From: http://www.linuxquestions.org/questions/linux-newbie-8/how-to-port-forward-539814/
+    # This is probably better: http://www.fclose.com/816/port-forwarding-using-iptables/
+    echo "1" >/proc/sys/net/ipv4/ip_forward
+    # TODO: Delete old rules from previous runs.
+    iptables -t nat -F
+    iptables -F
+    iptables -A OUTPUT -t nat -i eth0 -p tcp --dport 3000 -j DNAT --to $HOST_IP:3000
+    # Shouldn't need the following, because the default policy is ACCEPT
+    # iptables -A FORWARD -p tcp -d $HOST_IP --dport 3000 -j ACCEPT
+    # TODO: Make these rules persistent.
+  SHELL
+
+  solr_config_dir = File.join solr_dir, "example/cloud/node1/conf"
   solr_schema = File.join solr_config_dir, "schema.xml"
   nutch_dir = "apache-nutch-1.9"
-  nutch_config_dir = File.join nutch_dir, "/conf"
+  nutch_config_dir = File.join nutch_dir, "conf"
+  nutch_home_dir = "/vagrant/nutch"
+  nutch_conf_dir = File.join nutch_home_dir, "conf"
+  nutch_urls_dir = File.join nutch_home_dir, "urls"
+  nutch_seed_file = File.join nutch_urls_dir, "seed.txt"
+
+  config.vm.provision "init-nutch", type: "shell", privileged: false, inline: <<-SHELL
+    echo "Setting up Nutch conf directory."
+    rm -rf #{nutch_conf_dir}
+    mkdir -p #{nutch_conf_dir}
+    cp -ar #{nutch_config_dir} #{nutch_conf_dir}
+    echo "You can change the name of your spider by editing #{File.join nutch_conf_dir, 'nutch-default.xml'}."
+    mkdir -p #{nutch_urls_dir}
+    touch #{nutch_seed_file}
+    echo "Edit #{nutch_seed_file} to specify which URLs to crawl."
+    # TODO: Edit whichever profile so the NUTCH_CONF_DIR=#{nutch_conf_dir}
+  SHELL
+
+    # echo "<property>\n  <name>http.agent.name</name>\n  <value>Vagrant Spider</value>\n<property>" >> #{File.join nutch_conf_dir, "nutch-default.xml"}
+
   nutch_schema = File.join nutch_dir, "schema.xml"
   config.vm.provision "config-solr-for-nutch", type: "shell", privileged: false, inline: <<-SHELL
     cp #{nutch_schema} #{core_dir}
