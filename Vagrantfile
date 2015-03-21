@@ -1,6 +1,8 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+require 'socket'
+
 # All Vagrant configuration is done below. The "2" in Vagrant.configure
 # configures the configuration version (we support older styles for
 # backwards compatibility). Please don't change it unless you know what
@@ -104,6 +106,9 @@ Vagrant.configure(2) do |config|
     # bin/solr stop -all
   SHELL
 
+=begin
+  This didn't work.
+
   # Config port forwarding so localhost:3000 on the Vagrant guest goes to
   # :3000 on the Vagrant host (presumably the developer's workstation)
   config.vm.provision "forward-port", type: "shell", inline: <<-SHELL
@@ -121,34 +126,65 @@ Vagrant.configure(2) do |config|
     # iptables -A FORWARD -p tcp -d $HOST_IP --dport 3000 -j ACCEPT
     # TODO: Make these rules persistent.
   SHELL
+=end
 
   solr_config_dir = File.join solr_dir, "example/cloud/node1/conf"
   solr_schema = File.join solr_config_dir, "schema.xml"
   nutch_dir = "apache-nutch-1.9"
+  nutch_bin_dir = File.join nutch_dir, "bin"
   nutch_config_dir = File.join nutch_dir, "conf"
   nutch_home_dir = "/vagrant/nutch"
   nutch_conf_dir = File.join nutch_home_dir, "conf"
   nutch_urls_dir = File.join nutch_home_dir, "urls"
   nutch_seed_file = File.join nutch_urls_dir, "seed.txt"
+  nutch_url_filter = File.join nutch_conf_dir, "regex-urlfilter.txt"
+  nutch_site_file = File.join nutch_conf_dir, 'nutch-site.xml'
 
   config.vm.provision "init-nutch", type: "shell", privileged: false, inline: <<-SHELL
     echo "Setting up Nutch conf directory."
     rm -rf #{nutch_conf_dir}
     mkdir -p #{nutch_conf_dir}
-    cp -ar #{nutch_config_dir} #{nutch_conf_dir}
-    echo "You can change the name of your spider by editing #{File.join nutch_conf_dir, 'nutch-default.xml'}."
+    cp -a #{nutch_config_dir}/* #{nutch_conf_dir}
+    echo "Set the name of your spider to Jade Spider."
+    sed --in-place -e '/^<configuration>/a<property><name>http.agent.name</name><value>Jade Spider</value></property>' #{nutch_site_file}
+    echo "You can change the name of your spider by editing #{nutch_site_file}."
     mkdir -p #{nutch_urls_dir}
-    touch #{nutch_seed_file}
+    echo "Set #{nutch_seed_file} to crawl http://#{Socket.gethostname}:3000."
+    echo "http://#{Socket.gethostname}:3000" >#{nutch_seed_file}
     echo "Edit #{nutch_seed_file} to specify which URLs to crawl."
-    # TODO: Edit whichever profile so the NUTCH_CONF_DIR=#{nutch_conf_dir}
+    echo "Set #{nutch_url_filter} to crawl only within the above domain."
+    echo "Recommended, so you don't crawl half the Internet."
+    sed --in-place -e '$s/^/#/' -e '$a+^http://([a-z0-9]*\.)*#{Socket.gethostname}:3000/' #{nutch_url_filter}
   SHELL
+
+  crawl_dir = File.join nutch_home_dir, "crawl-dir"
+  crawl_command_content = <<-EOF
+    #!/bin/bash
+
+    export NUTCH_CONF_DIR=#{nutch_conf_dir}
+    export JAVA_HOME=$(readlink -f /usr/bin/java | sed "s:bin/java::")
+    cd; cd #{nutch_dir}
+    mkdir -p #{crawl_dir}
+    bin/crawl #{nutch_urls_dir} #{crawl_dir} http://localhost:8983/solr/ 2
+  EOF
+
+  config.vm.provision "make-crawl-command", type: "shell", privileged: false, inline: <<-SHELL
+    echo '#{crawl_command_content}' >crawl
+    chmod a+x crawl
+  SHELL
+
+=begin
+The line that says where the segment is will be here in the crawl output:
+/^ParseSegment: segment: /
+bin/nutch solrindex http://127.0.0.1:8983/solr/ crawl/crawldb -linkdb crawl/linkdb crawl/segments/
+=end
 
     # echo "<property>\n  <name>http.agent.name</name>\n  <value>Vagrant Spider</value>\n<property>" >> #{File.join nutch_conf_dir, "nutch-default.xml"}
 
-  nutch_schema = File.join nutch_dir, "schema.xml"
-  config.vm.provision "config-solr-for-nutch", type: "shell", privileged: false, inline: <<-SHELL
-    cp #{nutch_schema} #{core_dir}
-  SHELL
+  # nutch_schema = File.join nutch_dir, "schema.xml"
+  # config.vm.provision "config-solr-for-nutch", type: "shell", privileged: false, inline: <<-SHELL
+  #   cp #{nutch_schema} #{core_dir}
+  # SHELL
 
   # config.vm.provision "patch", type: "shell", privileged: false, inline: <<-SHELL
   #   # This is the patch for solr 4. Have to check if the config for 5 is different.
@@ -185,4 +221,15 @@ Vagrant.configure(2) do |config|
   #   # bin/solr start -e cloud -noprompt
   # SHELL
 
+  # TODO: Make the following clean up after itself if run more than once.
+  config.vm.provision "set-up-profile", type: "shell", privileged: false, inline: <<-SHELL
+    sed --in-place \
+      -e '/export JAVA_HOME/d' \
+      -e '/export NUTCH_CONF_DIR/d' \
+      -e '/export CRAWL_DB/d' \
+      .profile
+    echo 'export JAVA_HOME=$(readlink -f /usr/bin/java | sed "s:bin/java::")' >>.profile
+    echo 'export NUTCH_CONF_DIR=#{nutch_conf_dir}' >>.profile
+    echo 'export CRAWL_DB=#{crawl_dir}/crawldb' >>.profile
+  SHELL
 end

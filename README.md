@@ -7,10 +7,20 @@ The goal is to upload this machine to [Hashicorp's Atlas of Vagrant boxes](https
 At a high level, here's how to use this vagrant VM:
 
 1. Initialize and run the virtual machine
-2. Configure Nutch to crawl your web site (typically the development version running on the machine that's running the vagrant box
+2. Configure Nutch to crawl your web site (typically the development version running on the machine that's running the vagrant box). This virtual machine will index `hostname:3000`, where _hostname_ is the name of the machine running the vagrant box
 3. Start the Nutch crawl
-4. Test your web site's search functionality by pointing at `localhost:8983`. Through the magic of Vagrant, your requests will actually be sent to the Vagrant box's port 8983, which is the default Solr port for queries.
+4. Test your web site's search functionality by pointing at `localhost:8983`. Through the magic of Vagrant, your requests will actually be sent to the Vagrant box's port 8983, which is the default Solr port for queries
 
 You can report problems or contribute to this project by submitting an issue to the [Github issue tracker](https://github.com/lcreid/solr-nutch-vagrant/issues). I'm happy to entertain pull requests, but it's best to submit an issue first, so we can discuss before you run off and do a lot of work.
 
 This machine is built on Ubuntu Server 14.04 with Solr 5.0.0 and Nutch 1.9.
+
+## Running a Crawl
+After installing, and periodically thereafter, you need to crawl the site you're testing. On the host machine:
+
+  vagrant ssh -c "./crawl"
+
+Or log into the guest and do it:
+
+  vagrant ssh
+  ./crawl
