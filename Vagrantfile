@@ -64,6 +64,10 @@ Vagrant.configure(2) do |config|
   #   push.app = "YOUR_ATLAS_USERNAME/YOUR_APPLICATION_NAME"
   # end
 
+  config.vm.provision "messages",
+    type: "shell", 
+    privileged: false,
+    inline: echo "For support, see: https://github.com/lcreid/solr-nutch-vagrant"
   # solr_url = "http://apache.mirror.vexxhost.com/lucene/solr/5.0.0/solr-5.0.0.tgz"
   # nutch_url = "http://apache.parentingamerica.com/nutch/1.9/apache-nutch-1.9-bin.tar.gz"
   # solr_file = File.basename solr_url
@@ -154,7 +158,7 @@ Vagrant.configure(2) do |config|
     echo "Edit #{nutch_seed_file} to specify which URLs to crawl."
     echo "Set #{nutch_url_filter} to crawl only within the above domain."
     echo "Recommended, so you don't crawl half the Internet."
-    sed --in-place -e '$s/^/#/' -e '$a+^http://([a-z0-9]*\.)*#{Socket.gethostname}:3000/' #{nutch_url_filter}
+    sed --in-place -e '$s/^/#/' -e '$a+^http://([a-zA-Z0-9]*\.)*#{Socket.gethostname}' #{nutch_url_filter}
   SHELL
 
   crawl_dir = File.join nutch_home_dir, "crawl-dir"
