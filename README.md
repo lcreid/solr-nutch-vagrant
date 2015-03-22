@@ -7,17 +7,17 @@ This is a Vagrantfile to create a [Vagrant](https://www.vagrantup.com/) virtual 
 ## VirtualBox and Vagrant
 These steps are applicable for Ubuntu, Mint, Debian, etc.
 
-  sudo apt-get install virtualbox-dkms virtualbox
-  wget "https://dl.bintray.com/mitchellh/vagrant/vagrant_1.7.2_x86_64.deb"
-  sudo dpkg -i vagrant_1.7.2_x86_64.deb
+    sudo apt-get install virtualbox-dkms virtualbox
+    wget "https://dl.bintray.com/mitchellh/vagrant/vagrant_1.7.2_x86_64.deb"
+    sudo dpkg -i vagrant_1.7.2_x86_64.deb
 
 You may want to try the latest version of Vagrant, rather than the version specified above.
 
 ## The Vagrant Machine
 
-  git clone https://github.com/lcreid/solr-nutch-vagrant.git
-  cd solr-nutch-vagrant
-  vagrant up
+    git clone https://github.com/lcreid/solr-nutch-vagrant.git
+    cd solr-nutch-vagrant
+    vagrant up
 
 At this point, you can test the Solr is running by browsing to `localhost:8983`. Through the magic of Vagrant, your requests will actually be sent to the Vagrant box's port 8983, which is the default Solr port for queries. If you try a search, you won't get any documents yet. You have to crawl the web site first.
 
@@ -29,12 +29,12 @@ TODO: Finish this.
 ## Running a Crawl
 After installing, and periodically thereafter, you need to crawl the site you're testing. On the host machine, type:
 
-  vagrant ssh -c "./crawl"
+    vagrant ssh -c "./crawl"
 
 Or log into the guest and do it there:
 
-  vagrant ssh
-  ./crawl
+    vagrant ssh
+    ./crawl
 
 Now browse to `localhost:8983` and do a search to see if you get any documents.
 
