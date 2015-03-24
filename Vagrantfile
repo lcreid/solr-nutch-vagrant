@@ -65,9 +65,10 @@ Vagrant.configure(2) do |config|
   # end
 
   config.vm.provision "messages",
-    type: "shell", 
+    type: "shell",
     privileged: false,
-    inline: echo "For support, see: https://github.com/lcreid/solr-nutch-vagrant"
+    inline: 'echo "For support, see: https://github.com/lcreid/solr-nutch-vagrant"'
+
   # solr_url = "http://apache.mirror.vexxhost.com/lucene/solr/5.0.0/solr-5.0.0.tgz"
   # nutch_url = "http://apache.parentingamerica.com/nutch/1.9/apache-nutch-1.9-bin.tar.gz"
   # solr_file = File.basename solr_url
@@ -143,10 +144,12 @@ Vagrant.configure(2) do |config|
   nutch_seed_file = File.join nutch_urls_dir, "seed.txt"
   nutch_url_filter = File.join nutch_conf_dir, "regex-urlfilter.txt"
   nutch_site_file = File.join nutch_conf_dir, 'nutch-site.xml'
+  crawl_dir = File.join nutch_home_dir, "crawl-dir"
 
   config.vm.provision "init-nutch", type: "shell", privileged: false, inline: <<-SHELL
     echo "Setting up Nutch conf directory."
     rm -rf #{nutch_conf_dir}
+    rm -rf #{crawl_dir}
     mkdir -p #{nutch_conf_dir}
     cp -a #{nutch_config_dir}/* #{nutch_conf_dir}
     echo "Set the name of your spider to Jade Spider."
@@ -158,10 +161,9 @@ Vagrant.configure(2) do |config|
     echo "Edit #{nutch_seed_file} to specify which URLs to crawl."
     echo "Set #{nutch_url_filter} to crawl only within the above domain."
     echo "Recommended, so you don't crawl half the Internet."
-    sed --in-place -e '$s/^/#/' -e '$a+^http://([a-zA-Z0-9]*\.)*#{Socket.gethostname}' #{nutch_url_filter}
+    sed --in-place -e '$s/^/#/' -e '$a+^http://([a-zA-Z0-9]*\\\\.)*#{Socket.gethostname}' #{nutch_url_filter}
   SHELL
 
-  crawl_dir = File.join nutch_home_dir, "crawl-dir"
   crawl_command_content = <<-EOF
     #!/bin/bash
 
