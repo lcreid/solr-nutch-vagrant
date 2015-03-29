@@ -76,39 +76,41 @@ Vagrant.configure(2) do |config|
 
   config.vm.provision "java-installs",
     type: "shell",
-    inline: "sudo apt-get -y install openjdk-7-jdk"
+    inline: <<-SHELL
+      sudo apt-get update
+      sudo apt-get -y install openjdk-7-jdk
+    SHELL
 
-  solr_dir = "solr-5.0.0"
+  solr_distribution_dir = "/home/vagrant/solr-4.10.3"
 
   config.vm.provision "apache-installs", type: "shell", privileged: false, inline: <<-SHELL
     echo Downloading and installing Apache software
-    wget -nv -N "http://apache.mirror.vexxhost.com/lucene/solr/5.0.0/solr-5.0.0.tgz"
-    tar -xf "solr-5.0.0.tgz"
+    wget -nv -N "http://apache.mirror.vexxhost.com/lucene/solr/4.10.3/solr-4.10.3.tgz"
+    tar -xf "solr-4.10.3.tgz"
     wget -nv -N "http://apache.parentingamerica.com/nutch/1.9/apache-nutch-1.9-bin.tar.gz"
     tar -xf "apache-nutch-1.9-bin.tar.gz"
-    chmod a+x #{File.join solr_dir, "bin/solr"}
+    chmod a+x #{File.join solr_distribution_dir, "bin/solr"}
   SHELL
 
   solr_home_dir = "/vagrant/solr"
   core_dir = "/vagrant/solr/cark"
 
+  template_dir = File.join solr_distribution_dir, "example/solr"
+  template_core_config_dir = File.join template_dir, "collection1/conf"
+
   config.vm.provision "init-solr", type: "shell", privileged: false, inline: <<-SHELL
-    # ls -l #{File.join(solr_dir, "solr/bin/solr")}
+    # ls -l #{File.join(solr_distribution_dir, "solr/bin/solr")}
     echo Running solr init in $PWD. This deletes your existing core!
-    cd #{solr_dir}
+    cd #{solr_distribution_dir}
     bin/solr stop -all
     rm -rf #{solr_home_dir}
     mkdir -p #{solr_home_dir}
-    cp -a "server/solr/solr.xml" #{solr_home_dir}
-    # echo Populating #{core_dir}
-    # mkdir -p #{core_dir} #{File.join core_dir, "conf"}
+    cp -a #{File.join template_dir, "solr.xml"} #{solr_home_dir}
+    echo Populating #{core_dir}
+    mkdir -p #{core_dir}
     # cp -ar "server/solr/configsets/basic_configs/conf" #{core_dir}
-    # echo "name=cark" >#{File.join core_dir, "core.properties"}
-    # You have to start Solr before creating the core.
-    bin/solr start -s #{solr_home_dir}
-    bin/solr create -c cark
-    # bin/solr start -e cloud -noprompt
-    # bin/solr stop -all
+    echo "name=cark" >#{File.join core_dir, "core.properties"}
+    cp -a #{template_core_config_dir} #{core_dir}
   SHELL
 
 =begin
@@ -135,9 +137,9 @@ Vagrant.configure(2) do |config|
 
   solr_config_dir = File.join core_dir, "conf"
   solr_schema = File.join solr_config_dir, "schema.xml"
-  nutch_dir = "apache-nutch-1.9"
-  nutch_bin_dir = File.join nutch_dir, "bin"
-  nutch_config_dir = File.join nutch_dir, "conf"
+  nutch_distribution_dir = "/home/vagrant/apache-nutch-1.9"
+  nutch_bin_dir = File.join nutch_distribution_dir, "bin"
+  nutch_config_dir = File.join nutch_distribution_dir, "conf"
   nutch_home_dir = "/vagrant/nutch"
   nutch_conf_dir = File.join nutch_home_dir, "conf"
   nutch_urls_dir = File.join nutch_home_dir, "urls"
@@ -168,20 +170,21 @@ Vagrant.configure(2) do |config|
       -e '54s/$/ -->/' \
       -e '70a<field name="_version_" type="long" indexed="true" stored="true"/>' \
       -e '80s/false/true/' #{solr_schema}
+    cd #{solr_distribution_dir}
+    bin/solr stop -all
+    bin/solr start -s #{solr_home_dir}
   SHELL
 
   crawl_command_content = <<-EOF
     #!/bin/bash
 
-    export NUTCH_CONF_DIR=#{nutch_conf_dir}
-    export JAVA_HOME=$(readlink -f /usr/bin/java | sed "s:bin/java::")
-    cd; cd #{nutch_dir}
+    cd; cd #{nutch_distribution_dir}
     mkdir -p #{crawl_dir}
     bin/crawl #{nutch_urls_dir} #{crawl_dir} http://localhost:8983/solr/ 2
   EOF
 
   config.vm.provision "make-crawl-command", type: "shell", privileged: false, inline: <<-SHELL
-    mkdir bin
+    mkdir -p bin
     cd bin
     echo '#{crawl_command_content}' >crawl
     chmod a+x crawl
@@ -195,7 +198,7 @@ bin/nutch solrindex http://127.0.0.1:8983/solr/ crawl/crawldb -linkdb crawl/link
 
     # echo "<property>\n  <name>http.agent.name</name>\n  <value>Vagrant Spider</value>\n<property>" >> #{File.join nutch_conf_dir, "nutch-default.xml"}
 
-  # nutch_schema = File.join nutch_dir, "schema.xml"
+  # nutch_schema = File.join nutch_distribution_dir, "schema.xml"
   # config.vm.provision "config-solr-for-nutch", type: "shell", privileged: false, inline: <<-SHELL
   #   cp #{nutch_schema} #{core_dir}
   # SHELL
@@ -229,7 +232,7 @@ bin/nutch solrindex http://127.0.0.1:8983/solr/ crawl/crawldb -linkdb crawl/link
   # SHELL
 
   # config.vm.provision "start-solr", type: "shell", privileged: false, inline: <<-SHELL
-  #   cd #{solr_dir}
+  #   cd #{solr_distribution_dir}
   #   echo Starting solr for good
   #   bin/solr start -s /vagrant/solr -noprompt
   #   # bin/solr start -e cloud -noprompt
