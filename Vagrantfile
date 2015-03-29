@@ -90,7 +90,7 @@ Vagrant.configure(2) do |config|
   SHELL
 
   solr_home_dir = "/vagrant/solr"
-  core_dir = "/vagrant/cores/cark"
+  core_dir = "/vagrant/solr/cark"
 
   config.vm.provision "init-solr", type: "shell", privileged: false, inline: <<-SHELL
     # ls -l #{File.join(solr_dir, "solr/bin/solr")}
@@ -133,7 +133,7 @@ Vagrant.configure(2) do |config|
   SHELL
 =end
 
-  solr_config_dir = File.join solr_dir, "example/cloud/node1/conf"
+  solr_config_dir = File.join core_dir, "conf"
   solr_schema = File.join solr_config_dir, "schema.xml"
   nutch_dir = "apache-nutch-1.9"
   nutch_bin_dir = File.join nutch_dir, "bin"
@@ -162,6 +162,12 @@ Vagrant.configure(2) do |config|
     echo "Set #{nutch_url_filter} to crawl only within the above domain."
     echo "Recommended, so you don't crawl half the Internet."
     sed --in-place -e '$s/^/#/' -e '$a+^http://([a-zA-Z0-9]*\\\\.)*#{Socket.gethostname}' #{nutch_url_filter}
+    echo "Setting up the Nutch-Solr integration"
+    cp -a #{File.join nutch_conf_dir, "schema.xml"} #{solr_schema}
+    sed --in-place -e '53s/</<!-- &/' \
+      -e '54s/$/ -->/' \
+      -e '70a<field name="_version_" type="long" indexed="true" stored="true"/>' \
+      -e '80s/false/true/' #{solr_schema}
   SHELL
 
   crawl_command_content = <<-EOF
@@ -175,6 +181,8 @@ Vagrant.configure(2) do |config|
   EOF
 
   config.vm.provision "make-crawl-command", type: "shell", privileged: false, inline: <<-SHELL
+    mkdir bin
+    cd bin
     echo '#{crawl_command_content}' >crawl
     chmod a+x crawl
   SHELL
@@ -233,9 +241,12 @@ bin/nutch solrindex http://127.0.0.1:8983/solr/ crawl/crawldb -linkdb crawl/link
       -e '/export JAVA_HOME/d' \
       -e '/export NUTCH_CONF_DIR/d' \
       -e '/export CRAWL_DB/d' \
+      -e '/export SOLR_HOME_DIR/d' \
       .profile
     echo 'export JAVA_HOME=$(readlink -f /usr/bin/java | sed "s:bin/java::")' >>.profile
     echo 'export NUTCH_CONF_DIR=#{nutch_conf_dir}' >>.profile
     echo 'export CRAWL_DB=#{crawl_dir}/crawldb' >>.profile
+    echo 'export CRAWL_DB=#{crawl_dir}/crawldb' >>.profile
+    echo 'export SOLR_HOME_DIR=#{solr_home_dir}' >>.profile
   SHELL
 end
