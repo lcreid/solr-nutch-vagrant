@@ -82,6 +82,7 @@ Vagrant.configure(2) do |config|
     SHELL
 
   solr_distribution_dir = "/home/vagrant/solr-4.10.3"
+  nutch_distribution_dir = "/home/vagrant/apache-nutch-1.9"
 
   config.vm.provision "apache-installs", type: "shell", privileged: false, inline: <<-SHELL
     echo Downloading and installing Apache software
@@ -89,98 +90,83 @@ Vagrant.configure(2) do |config|
     tar -xf "solr-4.10.3.tgz"
     wget -nv -N "http://apache.parentingamerica.com/nutch/1.9/apache-nutch-1.9-bin.tar.gz"
     tar -xf "apache-nutch-1.9-bin.tar.gz"
-    chmod a+x #{File.join solr_distribution_dir, "bin/solr"}
   SHELL
 
   solr_home_dir = "/vagrant/solr"
-  core_dir = "/vagrant/solr/cark"
+  solr_command = File.join solr_home_dir, "bin/solr"
+  nutch_home_dir = "/vagrant/nutch"
+  nutch_bin = File.join nutch_home_dir, "bin"
+  crawl_command = File.join nutch_bin, "crawl"
+  nutch_command = File.join nutch_bin, "nutch"
 
-  template_dir = File.join solr_distribution_dir, "example/solr"
-  template_core_config_dir = File.join template_dir, "collection1/conf"
+  config.vm.provision "clone", type: "shell", privileged: false, inline: <<-SHELL
+    rm -rf #{solr_home_dir}
+    cp -ar #{solr_distribution_dir} #{solr_home_dir}
+    chmod a+x #{solr_command}
+    rm -rf #{nutch_home_dir}
+    cp -ar #{nutch_distribution_dir} #{nutch_home_dir}
+  SHELL
+
+  core_dir = File.join solr_home_dir, "node1/solr/collection1"
+  solr_config_dir = File.join core_dir, "conf"
+  # core_dir = File.join solr_home_dir, "/vagrant/solr/cark"
 
   config.vm.provision "init-solr", type: "shell", privileged: false, inline: <<-SHELL
-    # ls -l #{File.join(solr_distribution_dir, "solr/bin/solr")}
-    echo Running solr init in $PWD. This deletes your existing core!
-    cd #{solr_distribution_dir}
-    bin/solr stop -all
-    rm -rf #{solr_home_dir}
-    mkdir -p #{solr_home_dir}
-    cp -a #{File.join template_dir, "solr.xml"} #{solr_home_dir}
-    echo Populating #{core_dir}
-    mkdir -p #{core_dir}
-    # cp -ar "server/solr/configsets/basic_configs/conf" #{core_dir}
-    echo "name=cark" >#{File.join core_dir, "core.properties"}
-    cp -a #{template_core_config_dir} #{core_dir}
+    # bin/solr stop -all
+    # echo "name=cark" >#{File.join core_dir, "core.properties"}
   SHELL
 
-=begin
-  This didn't work.
-
-  # Config port forwarding so localhost:3000 on the Vagrant guest goes to
-  # :3000 on the Vagrant host (presumably the developer's workstation)
-  config.vm.provision "forward-port", type: "shell", inline: <<-SHELL
-    # Get the host IP by looking up the default gateway.
-    HOST_IP=`ip route | awk '/default/ { print $3 }'`
-    # TODO: No to the above. I just port forward localhost:3000 to default gateway:3000
-    # From: http://www.linuxquestions.org/questions/linux-newbie-8/how-to-port-forward-539814/
-    # This is probably better: http://www.fclose.com/816/port-forwarding-using-iptables/
-    echo "1" >/proc/sys/net/ipv4/ip_forward
-    # TODO: Delete old rules from previous runs.
-    iptables -t nat -F
-    iptables -F
-    iptables -A OUTPUT -t nat -i eth0 -p tcp --dport 3000 -j DNAT --to $HOST_IP:3000
-    # Shouldn't need the following, because the default policy is ACCEPT
-    # iptables -A FORWARD -p tcp -d $HOST_IP --dport 3000 -j ACCEPT
-    # TODO: Make these rules persistent.
-  SHELL
-=end
-
-  solr_config_dir = File.join core_dir, "conf"
   solr_schema = File.join solr_config_dir, "schema.xml"
-  nutch_distribution_dir = "/home/vagrant/apache-nutch-1.9"
-  nutch_bin_dir = File.join nutch_distribution_dir, "bin"
-  nutch_config_dir = File.join nutch_distribution_dir, "conf"
-  nutch_home_dir = "/vagrant/nutch"
+  # nutch_config_dir = File.join nutch_distribution_dir, "conf"
   nutch_conf_dir = File.join nutch_home_dir, "conf"
+  nutch_schema = File.join nutch_conf_dir, "schema.xml"
+  nutch_tmp_schema = File.join "/tmp", "nutch_schema.xml"
   nutch_urls_dir = File.join nutch_home_dir, "urls"
   nutch_seed_file = File.join nutch_urls_dir, "seed.txt"
   nutch_url_filter = File.join nutch_conf_dir, "regex-urlfilter.txt"
   nutch_site_file = File.join nutch_conf_dir, 'nutch-site.xml'
-  crawl_dir = File.join nutch_home_dir, "crawl-dir"
+  crawl_dir = File.join nutch_conf_dir, "crawl-dir"
+
+  start_solr = solr_command + " start -e cloud -noprompt"
+  stop_solr = solr_command + " stop -all"
+
+  config.vm.provision "init-solr", type: "shell", privileged: false, inline: <<-SHELL
+    #{start_solr}
+  SHELL
 
   config.vm.provision "init-nutch", type: "shell", privileged: false, inline: <<-SHELL
-    echo "Setting up Nutch conf directory."
-    rm -rf #{nutch_conf_dir}
+    echo "Deleting Nutch crawl directory."
     rm -rf #{crawl_dir}
-    mkdir -p #{nutch_conf_dir}
-    cp -a #{nutch_config_dir}/* #{nutch_conf_dir}
     echo "Set the name of your spider to Jade Spider."
     sed --in-place -e '/^<configuration>/a<property><name>http.agent.name</name><value>Jade Spider</value></property>' #{nutch_site_file}
     echo "You can change the name of your spider by editing #{nutch_site_file}."
     mkdir -p #{nutch_urls_dir}
-    echo "Set #{nutch_seed_file} to crawl http://#{Socket.gethostname}:3000."
-    echo "http://#{Socket.gethostname}:3000" >#{nutch_seed_file}
+    echo "Set #{nutch_seed_file} to crawl http://#{Socket.gethostname}:3000/."
+    echo "http://#{Socket.gethostname}:3000/" >#{nutch_seed_file}
     echo "Edit #{nutch_seed_file} to specify which URLs to crawl."
     echo "Set #{nutch_url_filter} to crawl only within the above domain."
     echo "Recommended, so you don't crawl half the Internet."
-    sed --in-place -e '$s/^/#/' -e '$a+^http://([a-zA-Z0-9]*\\\\.)*#{Socket.gethostname}' #{nutch_url_filter}
+    sed --in-place -e '$s/^/#/' -e '$a+^http://([a-zA-Z0-9]*\\\\.)*#{Socket.gethostname}:3000/' #{nutch_url_filter}
     echo "Setting up the Nutch-Solr integration"
-    cp -a #{File.join nutch_conf_dir, "schema.xml"} #{solr_schema}
+    cp -a #{nutch_schema} #{nutch_tmp_schema}
     sed --in-place -e '53s/</<!-- &/' \
       -e '54s/$/ -->/' \
       -e '70a<field name="_version_" type="long" indexed="true" stored="true"/>' \
-      -e '80s/false/true/' #{solr_schema}
-    cd #{solr_distribution_dir}
-    bin/solr stop -all
-    bin/solr start -s #{solr_home_dir}
+      -e '80s/false/true/' #{nutch_tmp_schema}
+    cp -a #{nutch_tmp_schema} #{solr_schema}
+    cp -a #{nutch_tmp_schema} #{solr_schema.sub(/1/, "2")}
+  SHELL
+
+  config.vm.provision "restart", type: "shell", privileged: false, inline: <<-SHELL
+    #{stop_solr}
+    #{start_solr}
   SHELL
 
   crawl_command_content = <<-EOF
     #!/bin/bash
 
-    cd; cd #{nutch_distribution_dir}
     mkdir -p #{crawl_dir}
-    bin/crawl #{nutch_urls_dir} #{crawl_dir} http://localhost:8983/solr/ 2
+    #{crawl_command} #{nutch_urls_dir} #{crawl_dir} http://localhost:8983/solr/collection1 2
   EOF
 
   config.vm.provision "make-crawl-command", type: "shell", privileged: false, inline: <<-SHELL
@@ -190,66 +176,25 @@ Vagrant.configure(2) do |config|
     chmod a+x crawl
   SHELL
 
-=begin
-The line that says where the segment is will be here in the crawl output:
-/^ParseSegment: segment: /
-bin/nutch solrindex http://127.0.0.1:8983/solr/ crawl/crawldb -linkdb crawl/linkdb crawl/segments/
-=end
-
-    # echo "<property>\n  <name>http.agent.name</name>\n  <value>Vagrant Spider</value>\n<property>" >> #{File.join nutch_conf_dir, "nutch-default.xml"}
-
-  # nutch_schema = File.join nutch_distribution_dir, "schema.xml"
-  # config.vm.provision "config-solr-for-nutch", type: "shell", privileged: false, inline: <<-SHELL
-  #   cp #{nutch_schema} #{core_dir}
-  # SHELL
-
-  # config.vm.provision "patch", type: "shell", privileged: false, inline: <<-SHELL
-  #   # This is the patch for solr 4. Have to check if the config for 5 is different.
-  #
-  #   patch #{solr_schema} <<-EOF
-  #     --- /home/reid/apache-nutch-1.9/conf/schema.xml	2014-08-12 22:12:21.000000000 -0700
-  #     +++ schema.xml	2015-02-23 16:28:19.611069000 -0800
-  #     @@ -50,8 +50,8 @@
-  #                          catenateWords="1" catenateNumbers="1" catenateAll="0"
-  #                          splitOnCaseChange="1"/>
-  #                      <filter class="solr.LowerCaseFilterFactory"/>
-  #     -                <filter class="solr.EnglishPorterFilterFactory"
-  #     -                    protected="protwords.txt"/>
-  #     +                <!-- <filter class="solr.EnglishPorterFilterFactory"
-  #     +                    protected="protwords.txt"/> -->
-  #                      <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
-  #                  </analyzer>
-  #              </fieldType>
-  #     @@ -68,6 +68,7 @@
-  #          <fields>
-  #              <field name="id" type="string" stored="true" indexed="true"
-  #                  required="true"/>
-  #     +        <field name="_version_" type="long" indexed="true" stored="true"/>
-  #
-  #              <!-- core fields -->
-  #              <field name="segment" type="string" stored="true" indexed="false"/>
-  #   EOF
-  # SHELL
-
-  # config.vm.provision "start-solr", type: "shell", privileged: false, inline: <<-SHELL
-  #   cd #{solr_distribution_dir}
-  #   echo Starting solr for good
-  #   bin/solr start -s /vagrant/solr -noprompt
-  #   # bin/solr start -e cloud -noprompt
-  # SHELL
-
-  # TODO: Make the following clean up after itself if run more than once.
   config.vm.provision "set-up-profile", type: "shell", privileged: false, inline: <<-SHELL
+    echo Creating some useful aliases and environment variables.
+    echo Check .profile to see them.
     sed --in-place \
       -e '/export JAVA_HOME/d' \
       -e '/export NUTCH_CONF_DIR/d' \
       -e '/export CRAWL_DB/d' \
+      -e '/export LINK_DB/d' \
+      -e '/export SEGMENTS/d' \
       -e '/export SOLR_HOME_DIR/d' \
+      -e '/alias solr=/d' \
+      -e '/alias nutch=/d' \
       .profile
     echo 'export JAVA_HOME=$(readlink -f /usr/bin/java | sed "s:bin/java::")' >>.profile
     echo 'export NUTCH_CONF_DIR=#{nutch_conf_dir}' >>.profile
     echo 'export CRAWL_DB=#{crawl_dir}/crawldb' >>.profile
-    echo 'export CRAWL_DB=#{crawl_dir}/crawldb' >>.profile
-    echo 'export SOLR_HOME_DIR=#{solr_home_dir}' >>.profile
+    echo 'export LINK_DB=#{crawl_dir}/linkdb' >>.profile
+    echo 'export SEGMENTS_DIR=#{crawl_dir}/segments' >>.profile
+    echo 'alias solr="#{solr_command}"' >>.profile
+    echo 'alias nutch="#{nutch_command}"' >>.profile
   SHELL
 end
