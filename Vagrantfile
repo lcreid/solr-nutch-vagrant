@@ -51,7 +51,7 @@ Vagrant.configure(2) do |config|
   #   vb.gui = true
 
     # Solr won't start without at least a GB of RAM
-    vb.memory = "1024"
+    vb.memory = "1536"
   end
   #
   # View the documentation for the provider you are using for more
@@ -93,88 +93,15 @@ Vagrant.configure(2) do |config|
   SHELL
 
   solr_home_dir = "/vagrant/solr"
-  solr_command = File.join solr_home_dir, "bin/solr"
+  solr_command = File.join solr_distribution_dir, "bin/solr"
+
   nutch_home_dir = "/vagrant/nutch"
+  nutch_conf_dir = File.join nutch_home_dir, "conf"
+  crawl_dir = File.join nutch_home_dir, "crawl-dir"
+
   nutch_bin = File.join nutch_home_dir, "bin"
   crawl_command = File.join nutch_bin, "crawl"
   nutch_command = File.join nutch_bin, "nutch"
-
-  config.vm.provision "clone", type: "shell", privileged: false, inline: <<-SHELL
-    rm -rf #{solr_home_dir}
-    cp -ar #{solr_distribution_dir} #{solr_home_dir}
-    chmod a+x #{solr_command}
-    rm -rf #{nutch_home_dir}
-    cp -ar #{nutch_distribution_dir} #{nutch_home_dir}
-  SHELL
-
-  core_dir = File.join solr_home_dir, "node1/solr/collection1"
-  solr_config_dir = File.join core_dir, "conf"
-  # core_dir = File.join solr_home_dir, "/vagrant/solr/cark"
-
-  config.vm.provision "init-solr", type: "shell", privileged: false, inline: <<-SHELL
-    # bin/solr stop -all
-    # echo "name=cark" >#{File.join core_dir, "core.properties"}
-  SHELL
-
-  solr_schema = File.join solr_config_dir, "schema.xml"
-  # nutch_config_dir = File.join nutch_distribution_dir, "conf"
-  nutch_conf_dir = File.join nutch_home_dir, "conf"
-  nutch_schema = File.join nutch_conf_dir, "schema.xml"
-  nutch_tmp_schema = File.join "/tmp", "nutch_schema.xml"
-  nutch_urls_dir = File.join nutch_home_dir, "urls"
-  nutch_seed_file = File.join nutch_urls_dir, "seed.txt"
-  nutch_url_filter = File.join nutch_conf_dir, "regex-urlfilter.txt"
-  nutch_site_file = File.join nutch_conf_dir, 'nutch-site.xml'
-  crawl_dir = File.join nutch_conf_dir, "crawl-dir"
-
-  start_solr = solr_command + " start -e cloud -noprompt"
-  stop_solr = solr_command + " stop -all"
-
-  config.vm.provision "init-solr", type: "shell", privileged: false, inline: <<-SHELL
-    #{start_solr}
-  SHELL
-
-  config.vm.provision "init-nutch", type: "shell", privileged: false, inline: <<-SHELL
-    echo "Deleting Nutch crawl directory."
-    rm -rf #{crawl_dir}
-    echo "Set the name of your spider to Jade Spider."
-    sed --in-place -e '/^<configuration>/a<property><name>http.agent.name</name><value>Jade Spider</value></property>' #{nutch_site_file}
-    echo "You can change the name of your spider by editing #{nutch_site_file}."
-    mkdir -p #{nutch_urls_dir}
-    echo "Set #{nutch_seed_file} to crawl http://#{Socket.gethostname}:3000/."
-    echo "http://#{Socket.gethostname}:3000/" >#{nutch_seed_file}
-    echo "Edit #{nutch_seed_file} to specify which URLs to crawl."
-    echo "Set #{nutch_url_filter} to crawl only within the above domain."
-    echo "Recommended, so you don't crawl half the Internet."
-    sed --in-place -e '$s/^/#/' -e '$a+^http://([a-zA-Z0-9]*\\\\.)*#{Socket.gethostname}:3000/' #{nutch_url_filter}
-    echo "Setting up the Nutch-Solr integration"
-    cp -a #{nutch_schema} #{nutch_tmp_schema}
-    sed --in-place -e '53s/</<!-- &/' \
-      -e '54s/$/ -->/' \
-      -e '70a<field name="_version_" type="long" indexed="true" stored="true"/>' \
-      -e '80s/false/true/' #{nutch_tmp_schema}
-    cp -a #{nutch_tmp_schema} #{solr_schema}
-    cp -a #{nutch_tmp_schema} #{solr_schema.sub(/1/, "2")}
-  SHELL
-
-  config.vm.provision "restart", type: "shell", privileged: false, inline: <<-SHELL
-    #{stop_solr}
-    #{start_solr}
-  SHELL
-
-  crawl_command_content = <<-EOF
-    #!/bin/bash
-
-    mkdir -p #{crawl_dir}
-    #{crawl_command} #{nutch_urls_dir} #{crawl_dir} http://localhost:8983/solr/collection1 2
-  EOF
-
-  config.vm.provision "make-crawl-command", type: "shell", privileged: false, inline: <<-SHELL
-    mkdir -p bin
-    cd bin
-    echo '#{crawl_command_content}' >crawl
-    chmod a+x crawl
-  SHELL
 
   config.vm.provision "set-up-profile", type: "shell", privileged: false, inline: <<-SHELL
     echo Creating some useful aliases and environment variables.
@@ -194,7 +121,85 @@ Vagrant.configure(2) do |config|
     echo 'export CRAWL_DB=#{crawl_dir}/crawldb' >>.profile
     echo 'export LINK_DB=#{crawl_dir}/linkdb' >>.profile
     echo 'export SEGMENTS_DIR=#{crawl_dir}/segments' >>.profile
+    echo 'export SOLR_HOME_DIR=#{solr_home_dir}' >>.profile
     echo 'alias solr="#{solr_command}"' >>.profile
     echo 'alias nutch="#{nutch_command}"' >>.profile
+  SHELL
+
+  config.vm.provision "clone", type: "shell", privileged: false, inline: <<-SHELL
+    # echo "Copying distribution to our SOLR_HOME_DIR #{solr_home_dir}"
+    # [ -d #{solr_home_dir} ] && rm -rf #{solr_home_dir}
+    # cp -ar #{solr_distribution_dir} #{solr_home_dir}
+    # chmod a+x #{solr_command}
+    echo "Copying distribution to our Nutch home #{nutch_home_dir}"
+    [ -d #{nutch_home_dir} ] && rm -rf #{nutch_home_dir}
+    cp -ar #{nutch_distribution_dir} #{nutch_home_dir}
+  SHELL
+
+  core_dir = File.join solr_home_dir, "cark"
+  solr_config_dir = File.join core_dir, "conf"
+
+  solr_schema = File.join solr_config_dir, "schema.xml"
+  nutch_template_schema = File.join nutch_distribution_dir, "conf", "schema.xml"
+  nutch_tmp_schema = File.join "/tmp", "nutch_schema.xml"
+
+  start_solr = solr_command + " start -s " + solr_home_dir
+  stop_solr = solr_command + " stop -all"
+
+  config.vm.provision "init-solr", type: "shell", privileged: false, inline: <<-SHELL
+    #{stop_solr}
+    echo "Making core 'cark' at #{core_dir} (inside joke)."
+    [ -d #{solr_home_dir} ] && rm -rf #{solr_home_dir}
+    mkdir -p #{solr_home_dir}
+    cp -a #{File.join solr_distribution_dir, "example/solr/solr.xml"} #{solr_home_dir}
+    [ -d #{core_dir} ] && rm -rf #{core_dir}
+    mkdir -p #{core_dir}
+    cp -a #{File.join solr_distribution_dir, "example/solr/collection1/conf"} #{core_dir}
+    echo "name=cark" >#{File.join core_dir, "core.properties"}
+
+    echo "Setting up the Nutch-Solr integration in #{solr_schema}."
+    cp -a #{nutch_template_schema} #{nutch_tmp_schema}
+    sed --in-place -e '53s/</<!-- &/' \
+      -e '54s/$/ -->/' \
+      -e '70a<field name="_version_" type="long" indexed="true" stored="true"/>' \
+      -e '80s/false/true/' #{nutch_tmp_schema}
+    cp -a #{nutch_tmp_schema} #{solr_schema}
+    #{start_solr}
+  SHELL
+
+  nutch_urls_dir = File.join nutch_home_dir, "urls"
+  nutch_seed_file = File.join nutch_urls_dir, "seed.txt"
+  nutch_url_filter = File.join nutch_conf_dir, "regex-urlfilter.txt"
+  nutch_site_file = File.join nutch_conf_dir, 'nutch-site.xml'
+
+  config.vm.provision "init-nutch", type: "shell", privileged: false, inline: <<-SHELL
+    echo "Deleting Nutch crawl directory."
+    rm -rf #{crawl_dir}
+    echo "Set the name of your spider to Jade Spider."
+    sed --in-place -e '/^<configuration>/a<property><name>http.agent.name</name><value>Jade Spider</value></property>' #{nutch_site_file}
+    echo "You can change the name of your spider by editing #{nutch_site_file}."
+    mkdir -p #{nutch_urls_dir}
+    echo "Set #{nutch_seed_file} to crawl http://#{Socket.gethostname}:3000/."
+    echo "http://#{Socket.gethostname}:3000/" >#{nutch_seed_file}
+    echo "Edit #{nutch_seed_file} to specify which URLs to crawl."
+    echo "Set #{nutch_url_filter} to crawl only within the above domain."
+    echo "Recommended, so you don't crawl half the Internet."
+    sed --in-place -e '$s/^/#/' -e '$a+^http://([a-zA-Z0-9]*\\\\.)*#{Socket.gethostname}:3000/' #{nutch_url_filter}
+  SHELL
+
+  crawl_command_content = <<-EOF
+    #!/bin/bash
+
+    mkdir -p #{crawl_dir}
+    #{crawl_command} #{nutch_urls_dir} #{crawl_dir} http://localhost:8983/solr/cark 2
+  EOF
+
+  config.vm.provision "make-crawl-command", type: "shell", privileged: false, inline: <<-SHELL
+    mkdir -p bin
+    cd bin
+    echo '#{crawl_command_content}' >crawl
+    chmod a+x crawl
+    echo "You can now log in to your VM with 'vagrant ssh',"
+    echo "and crawl http://#{Socket.gethostname}:3000/ by running 'crawl'."
   SHELL
 end
