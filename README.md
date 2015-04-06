@@ -26,17 +26,25 @@ If you try a search, you won't get any documents yet. You have to crawl the web 
 ## Configuring the URL to Search
 You can ignore this section if the web site you want to search is on the host machine's port 3000 (e.g. being served by Mongrel, like Rails or Nanoc).
 
-TODO: Finish this.
+First, edit `nutch/urls/seed.txt`. Change the domain name and port to the site you want to search. If you're hosting the site on the same machine as you're hosting the Vagrant machine, you can leave the domain. If your web server is answering on a port other than 3000, you'll have to change the port.
+
+Note that you can't say `localhost`, because it's going to be interpreted on the Vagrant machine. `localhost` will refer the the Vagrant machine, not to the web host you want to crawl.
+
+Next, edit `nutch/conf/regex-urlfilter.txt`. Go to the last line, and make the obvious changes to make it consistent with the site you're crawling based on the `seed.txt` file. The spider will crawl only sites that match the regular expressions in this file. The default file provided in this Vagrant machine makes sure you only crawl on the local machine that's hosting the Vagrant machine.
+
+Note that messing up the regular expression in `regex-urlfilter.txt` can lead to very baffling mistakes.
+
+You might want to try reading the [Nutch tutorial](http://wiki.apache.org/nutch/NutchTutorial) on setting up a spider to crawl web sites if you're having trouble.
 
 ## Running a Crawl
 After installing, and periodically thereafter, you need to crawl the site you're testing. On the host machine, type:
 
-    vagrant ssh -c "./crawl"
+    vagrant ssh -c "crawl"
 
 Or log into the guest and do it there:
 
     vagrant ssh
-    ./crawl
+    crawl
 
 Now browse to `localhost:8983` and do a search to see if you get any documents.
 
@@ -44,4 +52,4 @@ Now browse to `localhost:8983` and do a search to see if you get any documents.
 
 You can report problems or contribute to this project by submitting an issue to the [Github issue tracker](https://github.com/lcreid/solr-nutch-vagrant/issues). I'm happy to entertain pull requests, but it's best to submit an issue first, so we can discuss before you run off and do a lot of work.
 
-This machine is built on Ubuntu Server 14.04 with Solr 5.0.0 and Nutch 1.9.
+This machine is built on Ubuntu Server 14.04 with Solr 4.10.3 and Nutch 1.9.

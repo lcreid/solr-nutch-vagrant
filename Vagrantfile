@@ -51,7 +51,7 @@ Vagrant.configure(2) do |config|
   #   vb.gui = true
 
     # Solr won't start without at least a GB of RAM
-    vb.memory = "1536"
+    vb.memory = "1024"
   end
   #
   # View the documentation for the provider you are using for more
@@ -97,6 +97,7 @@ Vagrant.configure(2) do |config|
 
   nutch_home_dir = "/vagrant/nutch"
   nutch_conf_dir = File.join nutch_home_dir, "conf"
+  nutch_urls_dir = File.join nutch_home_dir, "urls"
   crawl_dir = File.join nutch_home_dir, "crawl-dir"
 
   nutch_bin = File.join nutch_home_dir, "bin"
@@ -109,6 +110,7 @@ Vagrant.configure(2) do |config|
     sed --in-place \
       -e '/export JAVA_HOME/d' \
       -e '/export NUTCH_CONF_DIR/d' \
+      -e '/export URLS_DIR/d' \
       -e '/export CRAWL_DB/d' \
       -e '/export LINK_DB/d' \
       -e '/export SEGMENTS/d' \
@@ -118,6 +120,7 @@ Vagrant.configure(2) do |config|
       .profile
     echo 'export JAVA_HOME=$(readlink -f /usr/bin/java | sed "s:bin/java::")' >>.profile
     echo 'export NUTCH_CONF_DIR=#{nutch_conf_dir}' >>.profile
+    echo 'export URLS_DIR=#{nutch_urls_dir}' >>.profile
     echo 'export CRAWL_DB=#{crawl_dir}/crawldb' >>.profile
     echo 'export LINK_DB=#{crawl_dir}/linkdb' >>.profile
     echo 'export SEGMENTS_DIR=#{crawl_dir}/segments' >>.profile
@@ -167,7 +170,6 @@ Vagrant.configure(2) do |config|
     #{start_solr}
   SHELL
 
-  nutch_urls_dir = File.join nutch_home_dir, "urls"
   nutch_seed_file = File.join nutch_urls_dir, "seed.txt"
   nutch_url_filter = File.join nutch_conf_dir, "regex-urlfilter.txt"
   nutch_site_file = File.join nutch_conf_dir, 'nutch-site.xml'
@@ -185,6 +187,8 @@ Vagrant.configure(2) do |config|
     echo "Set #{nutch_url_filter} to crawl only within the above domain."
     echo "Recommended, so you don't crawl half the Internet."
     sed --in-place -e '$s/^/#/' -e '$a+^http://([a-zA-Z0-9]*\\\\.)*#{Socket.gethostname}:3000/' #{nutch_url_filter}
+    echo "Copying our own crawl command"
+    cp /vagrant/crawl #{crawl_command}
   SHELL
 
   crawl_command_content = <<-EOF
