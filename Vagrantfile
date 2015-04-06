@@ -98,7 +98,10 @@ Vagrant.configure(2) do |config|
   nutch_home_dir = "/vagrant/nutch"
   nutch_conf_dir = File.join nutch_home_dir, "conf"
   nutch_urls_dir = File.join nutch_home_dir, "urls"
-  crawl_dir = File.join nutch_home_dir, "crawl-dir"
+  # crawl-dir has to be on the local drive of the Vagrant machine. I spend
+  # weeks chasing a problems that was because it was on the shared device
+  # (/vagrant/...)
+  crawl_dir = "/home/vagrant/crawl-dir"
 
   nutch_bin = File.join nutch_home_dir, "bin"
   crawl_command = File.join nutch_bin, "crawl"
@@ -187,8 +190,6 @@ Vagrant.configure(2) do |config|
     echo "Set #{nutch_url_filter} to crawl only within the above domain."
     echo "Recommended, so you don't crawl half the Internet."
     sed --in-place -e '$s/^/#/' -e '$a+^http://([a-zA-Z0-9]*\\\\.)*#{Socket.gethostname}:3000/' #{nutch_url_filter}
-    echo "Copying our own crawl command"
-    cp /vagrant/crawl #{crawl_command}
   SHELL
 
   crawl_command_content = <<-EOF
