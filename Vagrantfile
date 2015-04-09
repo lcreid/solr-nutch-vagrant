@@ -192,6 +192,8 @@ Vagrant.configure(2) do |config|
     sed --in-place -e '$s/^/#/' -e '$a+^http://([a-zA-Z0-9]*\\\\.)*#{Socket.gethostname}:3000/' #{nutch_url_filter}
   SHELL
 
+  config.vm.provision "init-startup", type: "shell", inline: "cp /vagrant/solr.conf /etc/init/"
+
   crawl_command_content = <<-EOF
     #!/bin/bash
 
