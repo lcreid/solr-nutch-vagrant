@@ -146,8 +146,8 @@ Vagrant.configure(2) do |config|
   solr_config_dir = File.join core_dir, "conf"
 
   solr_schema = File.join solr_config_dir, "schema.xml"
-  nutch_template_schema = File.join nutch_distribution_dir, "conf", "schema.xml"
-  nutch_tmp_schema = File.join "/tmp", "nutch_schema.xml"
+  nutch_template_conf_dir = File.join nutch_distribution_dir, "conf"
+  nutch_template_schema = File.join nutch_template_conf_dir, "schema.xml"
 
   start_solr = solr_command + " start -s " + solr_home_dir
   stop_solr = solr_command + " stop -all"
@@ -164,24 +164,28 @@ Vagrant.configure(2) do |config|
     echo "name=cark" >#{File.join core_dir, "core.properties"}
 
     echo "Setting up the Nutch-Solr integration in #{solr_schema}."
-    cp -a #{nutch_template_schema} #{nutch_tmp_schema}
-    sed --in-place -e '53s/</<!-- &/' \
+    sed -e '53s/</<!-- &/' \
       -e '54s/$/ -->/' \
       -e '70a<field name="_version_" type="long" indexed="true" stored="true"/>' \
-      -e '80s/false/true/' #{nutch_tmp_schema}
-    cp -a #{nutch_tmp_schema} #{solr_schema}
+      -e '80s/false/true/' #{nutch_template_schema} #{solr_schema}
     #{start_solr}
   SHELL
 
   nutch_seed_file = File.join nutch_urls_dir, "seed.txt"
   nutch_url_filter = File.join nutch_conf_dir, "regex-urlfilter.txt"
   nutch_site_file = File.join nutch_conf_dir, 'nutch-site.xml'
+  nutch_template_urlfilter = File.join nutch_template_conf_dir, "regex-urlfilter.txt"
+  nutch_template_site_file = File.join nutch_template_conf_dir, "nutch-site.xml"
+
+
 
   config.vm.provision "init-nutch", type: "shell", privileged: false, inline: <<-SHELL
     echo "Deleting Nutch crawl directory."
     rm -rf #{crawl_dir}
     echo "Set the name of your spider to Jade Spider."
-    sed --in-place -e '/^<configuration>/a<property><name>http.agent.name</name><value>Jade Spider</value></property>' #{nutch_site_file}
+    sed -e '7c  <property><name>http.agent.name</name><value>Jade Spider</value></property>' \
+      -e '8i    <property><name>db.fetch.interval.default</name><value>5</value><description>Refetch after 5 seconds. Obviously not for production, but good for testing.</description></property>' \
+      #{nutch_template_site_file} >#{nutch_site_file}
     echo "You can change the name of your spider by editing #{nutch_site_file}."
     mkdir -p #{nutch_urls_dir}
     echo "Set #{nutch_seed_file} to crawl http://#{Socket.gethostname}:3000/."
@@ -189,7 +193,7 @@ Vagrant.configure(2) do |config|
     echo "Edit #{nutch_seed_file} to specify which URLs to crawl."
     echo "Set #{nutch_url_filter} to crawl only within the above domain."
     echo "Recommended, so you don't crawl half the Internet."
-    sed --in-place -e '$s/^/#/' -e '$a+^http://([a-zA-Z0-9]*\\\\.)*#{Socket.gethostname}:3000/' #{nutch_url_filter}
+    sed -e '$s/^/#/' -e '$a+^http://([a-zA-Z0-9]*\\\\.)*#{Socket.gethostname}:3000/' #{nutch_template_urlfilter} >#{nutch_url_filter}
   SHELL
 
   config.vm.provision "init-startup", type: "shell", inline: "cp /vagrant/solr.conf /etc/init/"
