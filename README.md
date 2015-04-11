@@ -5,13 +5,13 @@ This is a Vagrantfile to create a [Vagrant](https://www.vagrantup.com/) virtual 
 # Quick start
 
 ## VirtualBox and Vagrant
-These steps are applicable for Ubuntu, Mint, Debian, etc.
+You need to [install VirtualBox](https://www.virtualbox.org/wiki/Downloads) and [Vagrant](https://www.vagrantup.com/downloads.html) first (and they may have their own prerequisites, depending on your operating system). The following steps are applicable for Ubuntu, Mint, Debian, etc.
 
     sudo apt-get install virtualbox-dkms virtualbox
     wget "https://dl.bintray.com/mitchellh/vagrant/vagrant_1.7.2_x86_64.deb"
     sudo dpkg -i vagrant_1.7.2_x86_64.deb
 
-You may want to try the latest version of Vagrant, rather than the version specified above.
+You may want to try the [latest version of Vagrant](https://www.vagrantup.com/downloads.html), rather than the version specified above.
 
 ## The Vagrant Machine
 
@@ -19,12 +19,14 @@ You may want to try the latest version of Vagrant, rather than the version speci
     cd solr-nutch-vagrant
     vagrant up
 
-At this point, you can test that Solr is running by browsing to `localhost:8983`. Through the magic of Vagrant, your requests will actually be sent to the Vagrant box's port 8983, which is the default Solr port for queries.
+The `vagrant up` step takes a long time, especially the very first time. That's because it has to download a whole Ubuntu 14.04 virtual machine. Thereafter, it downloads the whole Java JDK (for some reason Solr wants the JDK, not just the JRE). Finally, the Solr and Nutch downloads themselves are a decent size.
+
+Once it's done, you can test that Solr is running by browsing to `localhost:8983`. Through the magic of Vagrant, your requests will actually be sent to the Vagrant box's port 8983, which is the default Solr port for queries.
 
 If you try a search, you won't get any documents yet. You have to crawl the web site first.
 
 ## Configuring the URL to Search
-You can ignore this section if the web site you want to search is on the host machine's port 3000 (e.g. being served by Mongrel, like Rails or Nanoc).
+You can ignore this section if the web site you want to search is on the host machine's port 3000 (e.g. being served by [Mongrel](https://rubygems.org/gems/mongrel/versions/1.1.5), like [Rails](http://rubyonrails.org) or [Nanoc](http://nanoc.ws)).
 
 First, edit `nutch/urls/seed.txt`. Change the domain name and port to the site you want to search. If you're hosting the site on the same machine as you're hosting the Vagrant machine, you can leave the domain. If your web server is answering on a port other than 3000, you'll have to change the port.
 
@@ -32,9 +34,7 @@ Note that you can't say `localhost`, because it's going to be interpreted on the
 
 Next, edit `nutch/conf/regex-urlfilter.txt`. Go to the last line, and make the obvious changes to make it consistent with the site you're crawling based on the `seed.txt` file. The spider will crawl only sites that match the regular expressions in this file. The default file provided in this Vagrant machine makes sure you only crawl on the local machine that's hosting the Vagrant machine.
 
-Note that messing up the regular expression in `regex-urlfilter.txt` can lead to very baffling mistakes.
-
-You might want to try reading the [Nutch tutorial](http://wiki.apache.org/nutch/NutchTutorial) on setting up a spider to crawl web sites if you're having trouble.
+Note that messing up the regular expression in `regex-urlfilter.txt` can lead to very baffling error messages, or just plain failures to do what you expect. You might want to try reading the [Nutch tutorial](http://wiki.apache.org/nutch/NutchTutorial) on setting up a spider to crawl web sites if you're having trouble.
 
 ## Running a Crawl
 After installing, and periodically thereafter, you need to crawl the site you're testing. On the host machine, type:
@@ -48,8 +48,10 @@ Or log into the guest and do it there:
 
 Now browse to `localhost:8983` and do a search to see if you get any documents.
 
-# Support
+## Starting and Stopping Solr
+If you're messing with Solr configuration files, you may need to start and stop Solr. You can use the standard commands `sudo stop solr` and `sudo start solr`, or even `sudo restart solr`.
 
+# Support
 You can report problems or contribute to this project by submitting an issue to the [Github issue tracker](https://github.com/lcreid/solr-nutch-vagrant/issues). I'm happy to entertain pull requests, but it's best to submit an issue first, so we can discuss before you run off and do a lot of work.
 
 This machine is built on Ubuntu Server 14.04 with Solr 4.10.3 and Nutch 1.9.
