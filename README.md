@@ -46,10 +46,17 @@ Or log into the guest and do it there:
     vagrant ssh
     crawl
 
-Now browse to `localhost:8983` and do a search to see if you get any documents.
+Now browse to `localhost:8983`, and do a search to see if you get any documents.
+
+Note that there's no regularly-scheduled crawl set up on this box. The assumption is that you're using this for development, and would probably prefer on-demand crawls. If you want a scheduled crawl, you can add it using `cron` or any other way you're comfortable with. Remember, however, that anything you add to the machine's configuration, you'll have to redo after every time you do a `vagrant destroy`, or any time you create a new machine somewhere else (e.g. a co-worker wants to do the same thing that you're doing).
 
 ## Starting and Stopping Solr
 If you're messing with Solr configuration files, you may need to start and stop Solr. You can use the standard commands `sudo stop solr` and `sudo start solr`, or even `sudo restart solr`.
+
+## Using the Search Engine
+To learn how to *use* the Solr search engine from your own site, try the [Solr Quickstart](http://lucene.apache.org/solr/quickstart.html) and the [other Solr documentation](http://lucene.apache.org/solr/resources.html) on-line.
+
+You can also see the code for the [Jade Systems web site](https://github.com/lcreid/jade-site), which has a simple and naive implementation of a search. Note that the Jade code should not be used for a production web site, as it assumes a search engine open to anyone on the Internet.
 
 # Support
 You can report problems or contribute to this project by submitting an issue to the [Github issue tracker](https://github.com/lcreid/solr-nutch-vagrant/issues). I'm happy to entertain pull requests, but it's best to submit an issue first, so we can discuss before you run off and do a lot of work.
