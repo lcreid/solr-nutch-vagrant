@@ -167,7 +167,7 @@ Vagrant.configure(2) do |config|
     sed -e '53s/</<!-- &/' \
       -e '54s/$/ -->/' \
       -e '70a<field name="_version_" type="long" indexed="true" stored="true"/>' \
-      -e '80s/false/true/' #{nutch_template_schema} #{solr_schema}
+      -e '80s/false/true/' #{nutch_template_schema} >#{solr_schema}
     #{start_solr}
   SHELL
 
