@@ -1,6 +1,6 @@
 # solr-nutch-vagrant
 
-This is a Vagrantfile to create a [Vagrant](https://www.vagrantup.com/) virtual machine running the [Nutch](http://nutch.apache.org/) web crawler, and storing the results of the crawl in the [Solr](http://lucene.apache.org/solr/) search engine. It's meant for web site developers who need to develop and test search functionality on their web site.
+This is a Vagrantfile to create a [Vagrant](https://www.vagrantup.com/) virtual machine running the [Nutch](http://nutch.apache.org/) web crawler, and storing the results of the crawl in the [Solr](http://lucene.apache.org/solr/) search engine. It's meant for web site developers who need to develop and test search functionality on their web site. You can run this virtual machine on the machine where you're developing the web site. You can test all the search functionality of your site against a real search engine.
 
 # Quick start
 
@@ -21,16 +21,16 @@ You may want to try the [latest version of Vagrant](https://www.vagrantup.com/do
 
 The `vagrant up` step takes a long time, especially the very first time. That's because it has to download a whole Ubuntu 14.04 virtual machine. Thereafter, it downloads the whole Java JDK (for some reason Solr wants the JDK, not just the JRE). Finally, the Solr and Nutch downloads themselves are a decent size.
 
-Once it's done, you can test that Solr is running by browsing to `localhost:8983`. Through the magic of Vagrant, your requests will actually be sent to the Vagrant box's port 8983, which is the default Solr port for queries.
+Once you're done downloading and installing, you can test that Solr is running by browsing to `localhost:8983`. Through the magic of Vagrant, your requests will actually be sent to the Vagrant box's port 8983, which is the default Solr port for queries.
 
 If you try a search, you won't get any documents yet. You have to crawl the web site first.
 
-## Configuring the URL to Search
+## Configuring the URL to Crawl
 You can ignore this section if the web site you want to search is on the host machine's port 3000 (e.g. being served by [Mongrel](https://rubygems.org/gems/mongrel/versions/1.1.5), like [Rails](http://rubyonrails.org) or [Nanoc](http://nanoc.ws)).
 
-First, edit `nutch/urls/seed.txt`. Change the domain name and port to the site you want to search. If you're hosting the site on the same machine as you're hosting the Vagrant machine, you can leave the domain. If your web server is answering on a port other than 3000, you'll have to change the port.
+First, edit `nutch/urls/seed.txt`. Change the domain name and port to the site you want to crawl. If you're hosting the site on the same machine as you're hosting the Vagrant machine, you can leave the domain. If your web server is answering on a port other than 3000, you'll have to change the port.
 
-Note that you can't say `localhost`, because it's going to be interpreted on the Vagrant machine. `localhost` will refer the the Vagrant machine, not to the web host you want to crawl.
+Note that you can't say `localhost`, because it's going to be interpreted on the Vagrant machine. `localhost` will refer to the Vagrant machine, not to the web host you want to crawl.
 
 Next, edit `nutch/conf/regex-urlfilter.txt`. Go to the last line, and make the obvious changes to make it consistent with the site you're crawling based on the `seed.txt` file. The spider will crawl only sites that match the regular expressions in this file. The default file provided in this Vagrant machine makes sure you only crawl on the local machine that's hosting the Vagrant machine.
 
