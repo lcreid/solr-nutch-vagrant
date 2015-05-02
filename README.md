@@ -21,7 +21,7 @@ You may want to try the [latest version of Vagrant](https://www.vagrantup.com/do
 
 The `vagrant up` step takes a long time, especially the very first time. That's because it has to download a whole Ubuntu 14.04 virtual machine. Thereafter, it downloads the whole Java JDK (for some reason Solr wants the JDK, not just the JRE). Finally, the Solr and Nutch downloads themselves are a decent size.
 
-Once you're done downloading and installing, you can test that Solr is running by browsing to `localhost:8983`. Through the magic of Vagrant, your requests will actually be sent to the Vagrant box's port 8983, which is the default Solr port for queries.
+Once you're done downloading and installing, you can test that Solr is running by browsing to `localhost:8983/solr`. Through the magic of Vagrant, your requests will actually be sent to the Vagrant box's port 8983, which is the default Solr port for queries.
 
 If you try a search, you won't get any documents yet. You have to crawl the web site first.
 

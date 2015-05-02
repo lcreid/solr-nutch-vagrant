@@ -168,8 +168,11 @@ Vagrant.configure(2) do |config|
       -e '54s/$/ -->/' \
       -e '70a<field name="_version_" type="long" indexed="true" stored="true"/>' \
       -e '80s/false/true/' #{nutch_template_schema} >#{solr_schema}
-    #{start_solr}
   SHELL
+
+  config.vm.provision "init-startup", type: "shell", inline: "cp /vagrant/solr.conf /etc/init/"
+
+  config.vm.provision "start-solr", type: "shell", inline: "start solr"
 
   nutch_seed_file = File.join nutch_urls_dir, "seed.txt"
   nutch_url_filter = File.join nutch_conf_dir, "regex-urlfilter.txt"
@@ -195,8 +198,6 @@ Vagrant.configure(2) do |config|
     echo "Recommended, so you don't crawl half the Internet."
     sed -e '$s/^/#/' -e '$a+^http://([a-zA-Z0-9]*\\\\.)*#{Socket.gethostname}:3000/' #{nutch_template_urlfilter} >#{nutch_url_filter}
   SHELL
-
-  config.vm.provision "init-startup", type: "shell", inline: "cp /vagrant/solr.conf /etc/init/"
 
   crawl_command_content = <<-EOF
     #!/bin/bash
