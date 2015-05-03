@@ -19,7 +19,7 @@ You may want to try the [latest version of Vagrant](https://www.vagrantup.com/do
     cd solr-nutch-vagrant
     vagrant up
 
-The `vagrant up` step takes a long time, especially the very first time. That's because it has to download a whole Ubuntu 14.04 virtual machine. Thereafter, it downloads the whole Java JDK (for some reason Solr wants the JDK, not just the JRE). Finally, the Solr and Nutch downloads themselves are a decent size.
+The `vagrant up` step takes a long time the first time -- about 10 minutes for me with a relatively fast Internet connection. That's because it has to download a whole Ubuntu 14.04 virtual machine, then the Java JRE. Finally, the Solr and Nutch downloads themselves are a decent size.
 
 Once you're done downloading and installing, you can test that Solr is running by browsing to `localhost:8983/solr`. Through the magic of Vagrant, your requests will actually be sent to the Vagrant box's port 8983, which is the default Solr port for queries. Don't be too quick, however. It takes Solr a minute or two to get running enough to respond to the request.
 
@@ -46,7 +46,7 @@ Or log into the guest and do it there:
     vagrant ssh
     crawl
 
-Now browse to `localhost:8983`, and do a search to see if you get any documents.
+Now browse to `localhost:8983/solr/#/cark/query`, and do a search to see if you get any documents.
 
 Note that there's no regularly-scheduled crawl set up on this box. The assumption is that you're using this for development, and would probably prefer on-demand crawls. If you want a scheduled crawl, you can add it using `cron` or any other way you're comfortable with. Remember, however, that anything you add to the machine's configuration, you'll have to redo after every time you do a `vagrant destroy`, or any time you create a new machine somewhere else (e.g. a co-worker wants to do the same thing that you're doing).
 
