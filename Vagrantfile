@@ -78,7 +78,7 @@ Vagrant.configure(2) do |config|
     type: "shell",
     inline: <<-SHELL
       sudo apt-get update
-      sudo apt-get -y install openjdk-7-jre-headless
+      sudo apt-get -y install openjdk-7-jdk
     SHELL
 
   solr_distribution_dir = "/home/vagrant/solr-4.10.3"
@@ -171,7 +171,6 @@ Vagrant.configure(2) do |config|
   SHELL
 
   config.vm.provision "init-startup", type: "shell", inline: "cp /vagrant/solr.conf /etc/init/"
-
   config.vm.provision "start-solr", type: "shell", inline: "start solr"
 
   nutch_seed_file = File.join nutch_urls_dir, "seed.txt"
