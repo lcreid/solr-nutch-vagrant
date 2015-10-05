@@ -14,3 +14,4 @@ hs_err_pid*
 solr/
 nutch/
 .vagrant
+solr-nutch-vagrant.box
