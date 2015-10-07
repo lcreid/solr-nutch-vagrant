@@ -42,6 +42,8 @@ Vagrant.configure(2) do |config|
   # argument is a set of non-required options.
   # config.vm.synced_folder "../data", "/vagrant_data"
 
+  config.ssh.insert_key = false
+
   # Provider-specific configuration so you can fine-tune various
   # backing providers for Vagrant. These expose provider-specific options.
   # Example for VirtualBox:
@@ -86,9 +88,9 @@ Vagrant.configure(2) do |config|
 
   config.vm.provision "apache-installs", type: "shell", privileged: false, inline: <<-SHELL
     echo Downloading and installing Apache software
-    wget -nv -N "http://apache.mirror.vexxhost.com/lucene/solr/4.10.3/solr-4.10.3.tgz"
+    wget -nv -N "http://archive.apache.org/dist/lucene/solr/4.10.3/solr-4.10.3.tgz"
     tar -xf "solr-4.10.3.tgz"
-    wget -nv -N "http://apache.parentingamerica.com/nutch/1.9/apache-nutch-1.9-bin.tar.gz"
+    wget -nv -N "http://archive.apache.org/dist/nutch/1.9/apache-nutch-1.9-bin.tar.gz"
     tar -xf "apache-nutch-1.9-bin.tar.gz"
   SHELL
 
