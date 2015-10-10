@@ -1,0 +1,106 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+require 'socket'
+
+# Vagrantfile for making a box for solr and nutch, from the VM created
+# by the Vagrantfile in ../vm.
+Vagrant.configure(2) do |config|
+  # Create a forwarded port mapping which allows access to a specific port
+  # within the machine from a port on the host machine. In the example below,
+  # accessing "localhost:8983" will access port 8983 on the guest machine,
+  # which is the Solr port.
+  config.vm.network "forwarded_port", guest: 8983, host: 8983
+
+  # Provider-specific configuration so you can fine-tune various
+  # backing providers for Vagrant. These expose provider-specific options.
+  # Example for VirtualBox:
+  #
+  config.vm.provider "virtualbox" do |vb|
+  #   # Display the VirtualBox GUI when booting the machine
+  #   vb.gui = true
+
+    # Solr won't start without at least a GB of RAM, but the VM has the
+    # memory setting already defined
+    # vb.memory = "1024"
+  end
+
+  # Define a Vagrant Push strategy for pushing to Atlas. Other push strategies
+  # such as FTP and Heroku are also available. See the documentation at
+  # https://docs.vagrantup.com/v2/push/atlas.html for more information.
+  config.push.define "atlas" do |push|
+    push.app = "jadesystems/solr-nutch"
+  end
+
+  config.vm.provision "messages",
+    type: "shell",
+    privileged: false,
+    inline: 'echo "For support, see: https://github.com/lcreid/solr-nutch-vagrant"'
+
+  solr_home_dir = "/vagrant/solr"
+  solr_command = File.join solr_distribution_dir, "bin/solr"
+
+  nutch_home_dir = "/vagrant/nutch"
+  nutch_conf_dir = File.join nutch_home_dir, "conf"
+  nutch_urls_dir = File.join nutch_home_dir, "urls"
+  # crawl-dir has to be on the local drive of the Vagrant machine. I spend
+  # weeks chasing a problems that was because it was on the shared device
+  # (/vagrant/...)
+  crawl_dir = "/home/vagrant/crawl-dir"
+
+  nutch_bin = File.join nutch_home_dir, "bin"
+  crawl_command = File.join nutch_bin, "crawl"
+  nutch_command = File.join nutch_bin, "nutch"
+
+  core_dir = File.join solr_home_dir, "cark"
+  solr_config_dir = File.join core_dir, "conf"
+
+  solr_schema = File.join solr_config_dir, "schema.xml"
+  nutch_template_conf_dir = File.join nutch_distribution_dir, "conf"
+  nutch_template_schema = File.join nutch_template_conf_dir, "schema.xml"
+
+  start_solr = solr_command + " start -s " + solr_home_dir
+  stop_solr = solr_command + " stop -all"
+
+  config.vm.provision "init-startup", type: "shell", inline: "cp /vagrant/solr.conf /etc/init/"
+  config.vm.provision "start-solr", type: "shell", inline: "start solr"
+
+  nutch_seed_file = File.join nutch_urls_dir, "seed.txt"
+  nutch_url_filter = File.join nutch_conf_dir, "regex-urlfilter.txt"
+  nutch_site_file = File.join nutch_conf_dir, 'nutch-site.xml'
+  nutch_template_urlfilter = File.join nutch_template_conf_dir, "regex-urlfilter.txt"
+  nutch_template_site_file = File.join nutch_template_conf_dir, "nutch-site.xml"
+
+  config.vm.provision "init-nutch", type: "shell", privileged: false, inline: <<-SHELL
+    echo "Deleting Nutch crawl directory."
+    rm -rf #{crawl_dir}
+    echo "Setting the name of your spider to Jade Spider."
+    sed -e '7c  <property><name>http.agent.name</name><value>Jade Spider</value></property>' \
+      -e '8i    <property><name>db.fetch.interval.default</name><value>5</value><description>Refetch after 5 seconds. Obviously not for production, but good for testing.</description></property>' \
+      #{nutch_template_site_file} >#{nutch_site_file}
+    echo "You can change the name of your spider by editing #{nutch_site_file}."
+    mkdir -p #{nutch_urls_dir}
+    echo "Set #{nutch_seed_file} to crawl http://#{Socket.gethostname}:3000/."
+    echo "http://#{Socket.gethostname}:3000/" >#{nutch_seed_file}
+    echo "Edit #{nutch_seed_file} to specify which URLs to crawl."
+    echo "Set #{nutch_url_filter} to crawl only within the above domain."
+    echo "Recommended, so you don't crawl half the Internet."
+    sed -e '$s/^/#/' -e '$a+^http://([a-zA-Z0-9]*\\\\.)*#{Socket.gethostname}:3000/' #{nutch_template_urlfilter} >#{nutch_url_filter}
+  SHELL
+
+  crawl_command_content = <<-EOF
+    #!/bin/bash
+
+    mkdir -p #{crawl_dir}
+    #{crawl_command} #{nutch_urls_dir} #{crawl_dir} http://localhost:8983/solr/cark 2
+  EOF
+
+  config.vm.provision "make-crawl-command", type: "shell", privileged: false, inline: <<-SHELL
+    mkdir -p bin
+    cd bin
+    echo '#{crawl_command_content}' >crawl
+    chmod a+x crawl
+    echo "You can now log in to your VM with 'vagrant ssh',"
+    echo "and crawl http://#{Socket.gethostname}:3000/ by running 'crawl'."
+  SHELL
+end
