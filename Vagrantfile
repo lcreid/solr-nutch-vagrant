@@ -14,7 +14,7 @@ Vagrant.configure(2) do |config|
 
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://atlas.hashicorp.com/search.
-  config.vm.box = "ubuntu/trusty64"
+  config.vm.box = 'ubuntu/trusty64'
 
   # Disable automatic box update checking. If you disable this, then
   # boxes will only be checked for updates when the user runs
@@ -25,7 +25,7 @@ Vagrant.configure(2) do |config|
   # within the machine from a port on the host machine. In the example below,
   # accessing "localhost:8983" will access port 8983 on the guest machine,
   # which is the Solr port.
-  config.vm.network "forwarded_port", guest: 8983, host: 8983
+  config.vm.network 'forwarded_port', guest: 8983, host: 8983
 
   # Create a private network, which allows host-only access to the machine
   # using a specific IP.
@@ -42,23 +42,6 @@ Vagrant.configure(2) do |config|
   # argument is a set of non-required options.
   # config.vm.synced_folder "../data", "/vagrant_data"
 
-  config.ssh.insert_key = false
-
-  # Provider-specific configuration so you can fine-tune various
-  # backing providers for Vagrant. These expose provider-specific options.
-  # Example for VirtualBox:
-  #
-  config.vm.provider "virtualbox" do |vb|
-  #   # Display the VirtualBox GUI when booting the machine
-  #   vb.gui = true
-
-    # Solr won't start without at least a GB of RAM
-    vb.memory = "1024"
-  end
-  #
-  # View the documentation for the provider you are using for more
-  # information on available options.
-
   # Define a Vagrant Push strategy for pushing to Atlas. Other push strategies
   # such as FTP and Heroku are also available. See the documentation at
   # https://docs.vagrantup.com/v2/push/atlas.html for more information.
@@ -66,50 +49,25 @@ Vagrant.configure(2) do |config|
   #   push.app = "YOUR_ATLAS_USERNAME/YOUR_APPLICATION_NAME"
   # end
 
-  config.vm.provision "messages",
-    type: "shell",
-    privileged: false,
-    inline: 'echo "For support, see: https://github.com/lcreid/solr-nutch-vagrant"'
+  solr_distribution_dir = '/home/vagrant/solr-4.10.3'
+  nutch_distribution_dir = '/home/vagrant/apache-nutch-1.9'
 
-  # solr_url = "http://apache.mirror.vexxhost.com/lucene/solr/5.0.0/solr-5.0.0.tgz"
-  # nutch_url = "http://apache.parentingamerica.com/nutch/1.9/apache-nutch-1.9-bin.tar.gz"
-  # solr_file = File.basename solr_url
-  # nutch_file = File.basename nutch_url
+  solr_home_dir = '/vagrant/solr'
+  solr_command = File.join solr_distribution_dir, 'bin/solr'
 
-  config.vm.provision "java-installs",
-    type: "shell",
-    inline: <<-SHELL
-      sudo apt-get update
-      sudo apt-get -y install openjdk-7-jdk
-    SHELL
-
-  solr_distribution_dir = "/home/vagrant/solr-4.10.3"
-  nutch_distribution_dir = "/home/vagrant/apache-nutch-1.9"
-
-  config.vm.provision "apache-installs", type: "shell", privileged: false, inline: <<-SHELL
-    echo Downloading and installing Apache software
-    wget -nv -N "http://archive.apache.org/dist/lucene/solr/4.10.3/solr-4.10.3.tgz"
-    tar -xf "solr-4.10.3.tgz"
-    wget -nv -N "http://archive.apache.org/dist/nutch/1.9/apache-nutch-1.9-bin.tar.gz"
-    tar -xf "apache-nutch-1.9-bin.tar.gz"
-  SHELL
-
-  solr_home_dir = "/vagrant/solr"
-  solr_command = File.join solr_distribution_dir, "bin/solr"
-
-  nutch_home_dir = "/vagrant/nutch"
-  nutch_conf_dir = File.join nutch_home_dir, "conf"
-  nutch_urls_dir = File.join nutch_home_dir, "urls"
+  nutch_home_dir = '/vagrant/nutch'
+  nutch_conf_dir = File.join nutch_home_dir, 'conf'
+  nutch_urls_dir = File.join nutch_home_dir, 'urls'
   # crawl-dir has to be on the local drive of the Vagrant machine. I spend
   # weeks chasing a problems that was because it was on the shared device
   # (/vagrant/...)
-  crawl_dir = "/home/vagrant/crawl-dir"
+  crawl_dir = '/home/vagrant/crawl-dir'
 
-  nutch_bin = File.join nutch_home_dir, "bin"
-  crawl_command = File.join nutch_bin, "crawl"
-  nutch_command = File.join nutch_bin, "nutch"
+  nutch_bin = File.join nutch_home_dir, 'bin'
+  crawl_command = File.join nutch_bin, 'crawl'
+  nutch_command = File.join nutch_bin, 'nutch'
 
-  config.vm.provision "set-up-profile", type: "shell", privileged: false, inline: <<-SHELL
+  config.vm.provision 'set-up-profile', type: 'shell', privileged: false, inline: <<-SHELL
     echo Creating some useful aliases and environment variables.
     echo Check .profile to see them.
     sed --in-place \
@@ -134,7 +92,7 @@ Vagrant.configure(2) do |config|
     echo 'alias nutch="#{nutch_command}"' >>.profile
   SHELL
 
-  config.vm.provision "clone", type: "shell", privileged: false, inline: <<-SHELL
+  config.vm.provision 'clone', type: 'shell', privileged: false, inline: <<-SHELL
     # echo "Copying distribution to our SOLR_HOME_DIR #{solr_home_dir}"
     # [ -d #{solr_home_dir} ] && rm -rf #{solr_home_dir}
     # cp -ar #{solr_distribution_dir} #{solr_home_dir}
@@ -144,26 +102,26 @@ Vagrant.configure(2) do |config|
     cp -ar #{nutch_distribution_dir} #{nutch_home_dir}
   SHELL
 
-  core_dir = File.join solr_home_dir, "cark"
-  solr_config_dir = File.join core_dir, "conf"
+  core_dir = File.join solr_home_dir, 'cark'
+  solr_config_dir = File.join core_dir, 'conf'
 
-  solr_schema = File.join solr_config_dir, "schema.xml"
-  nutch_template_conf_dir = File.join nutch_distribution_dir, "conf"
-  nutch_template_schema = File.join nutch_template_conf_dir, "schema.xml"
+  solr_schema = File.join solr_config_dir, 'schema.xml'
+  nutch_template_conf_dir = File.join nutch_distribution_dir, 'conf'
+  nutch_template_schema = File.join nutch_template_conf_dir, 'schema.xml'
 
-  start_solr = solr_command + " start -s " + solr_home_dir
-  stop_solr = solr_command + " stop -all"
+  start_solr = solr_command + ' start -s ' + solr_home_dir
+  stop_solr = solr_command + ' stop -all'
 
-  config.vm.provision "init-solr", type: "shell", privileged: false, inline: <<-SHELL
+  config.vm.provision 'init-solr', type: 'shell', privileged: false, inline: <<-SHELL
     #{stop_solr}
     echo "Making core 'cark' at #{core_dir} (inside joke)."
     [ -d #{solr_home_dir} ] && rm -rf #{solr_home_dir}
     mkdir -p #{solr_home_dir}
-    cp -a #{File.join solr_distribution_dir, "example/solr/solr.xml"} #{solr_home_dir}
+    cp -a #{File.join solr_distribution_dir, 'example/solr/solr.xml'} #{solr_home_dir}
     [ -d #{core_dir} ] && rm -rf #{core_dir}
     mkdir -p #{core_dir}
-    cp -a #{File.join solr_distribution_dir, "example/solr/collection1/conf"} #{core_dir}
-    echo "name=cark" >#{File.join core_dir, "core.properties"}
+    cp -a #{File.join solr_distribution_dir, 'example/solr/collection1/conf'} #{core_dir}
+    echo "name=cark" >#{File.join core_dir, 'core.properties'}
 
     echo "Setting up the Nutch-Solr integration in #{solr_schema}."
     sed -e '53s/</<!-- &/' \
@@ -172,18 +130,16 @@ Vagrant.configure(2) do |config|
       -e '80s/false/true/' #{nutch_template_schema} >#{solr_schema}
   SHELL
 
-  config.vm.provision "init-startup", type: "shell", inline: "cp /vagrant/solr.conf /etc/init/"
-  config.vm.provision "start-solr", type: "shell", inline: "start solr"
+  config.vm.provision 'init-startup', type: 'shell', inline: 'cp /vagrant/solr.conf /etc/init/'
+  config.vm.provision 'start-solr', type: 'shell', inline: 'start solr'
 
-  nutch_seed_file = File.join nutch_urls_dir, "seed.txt"
-  nutch_url_filter = File.join nutch_conf_dir, "regex-urlfilter.txt"
+  nutch_seed_file = File.join nutch_urls_dir, 'seed.txt'
+  nutch_url_filter = File.join nutch_conf_dir, 'regex-urlfilter.txt'
   nutch_site_file = File.join nutch_conf_dir, 'nutch-site.xml'
-  nutch_template_urlfilter = File.join nutch_template_conf_dir, "regex-urlfilter.txt"
-  nutch_template_site_file = File.join nutch_template_conf_dir, "nutch-site.xml"
+  nutch_template_urlfilter = File.join nutch_template_conf_dir, 'regex-urlfilter.txt'
+  nutch_template_site_file = File.join nutch_template_conf_dir, 'nutch-site.xml'
 
-
-
-  config.vm.provision "init-nutch", type: "shell", privileged: false, inline: <<-SHELL
+  config.vm.provision 'init-nutch', type: 'shell', privileged: false, inline: <<-SHELL
     echo "Deleting Nutch crawl directory."
     rm -rf #{crawl_dir}
     echo "Set the name of your spider to Jade Spider."
@@ -207,7 +163,7 @@ Vagrant.configure(2) do |config|
     #{crawl_command} #{nutch_urls_dir} #{crawl_dir} http://localhost:8983/solr/cark 2
   EOF
 
-  config.vm.provision "make-crawl-command", type: "shell", privileged: false, inline: <<-SHELL
+  config.vm.provision 'make-crawl-command', type: 'shell', privileged: false, inline: <<-SHELL
     mkdir -p bin
     cd bin
     echo '#{crawl_command_content}' >crawl

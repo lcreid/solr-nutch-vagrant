@@ -14,4 +14,9 @@ hs_err_pid*
 solr/
 nutch/
 .vagrant
-solr-nutch-vagrant.box
+authorized_keys
+package.box
+build/Vagrantfile
+packer_cache/
+output-virtualbox-iso/
+*.box
