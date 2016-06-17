@@ -31,20 +31,32 @@ solr_distribution_dir="/home/vagrant/solr-4.10.3"
 nutch_distribution_dir="/home/vagrant/apache-nutch-1.9"
 
 solr_home_dir="/vagrant/solr"
-solr_command=File.join solr_distribution_dir, "bin/solr"
+solr_command="$solr_distribution_dir/bin/solr"
 
 nutch_home_dir="/vagrant/nutch"
-nutch_conf_dir=$nutch_home_dir/conf
-nutch_urls_dir=$nutch_home_dir/urls
+nutch_conf_dir="$nutch_home_dir/conf"
+nutch_urls_dir="$nutch_home_dir/urls"
 
 # crawl-dir has to be on the local drive of the Vagrant machine. I spend
 # weeks chasing a problems that was because it was on the shared device
 # (/vagrant/...)
 crawl_dir="/home/vagrant/crawl-dir"
 
-nutch_bin=$nutch_home_dir/bin
-crawl_command=$nutch_bin/crawl
-nutch_command=$nutch_bin/nutch
+nutch_bin_dir="$nutch_home_dir/bin"
+crawl_command="$nutch_bin_dir/crawl"
+nutch_command="$nutch_bin_dir/nutch"
 
 sudo apt-get dist-upgrade -y -qq
 sudo apt-get autoremove -y -qq
+
+cat >>.profile <<-EOF
+  export JAVA_HOME="$(readlink -f /usr/bin/java | sed "s:bin/java::")"
+  export NUTCH_CONF_DIR="$nutch_conf_dir"
+  export URLS_DIR="$nutch_urls_dir"
+  export CRAWL_DB="$crawl_dir/crawldb"
+  export LINK_DB="$crawl_dir/linkdb"
+  export SEGMENTS_DIR="$crawl_dir/segments"
+  export SOLR_HOME_DIR="$solr_home_dir"
+  alias solr="$solr_command"
+  alias nutch="$nutch_command"
+EOF

@@ -67,31 +67,6 @@ Vagrant.configure(2) do |config|
   crawl_command = File.join nutch_bin, 'crawl'
   nutch_command = File.join nutch_bin, 'nutch'
 
-  config.vm.provision 'set-up-profile', type: 'shell', privileged: false, inline: <<-SHELL
-    echo Creating some useful aliases and environment variables.
-    echo Check .profile to see them.
-    sed --in-place \
-      -e '/export JAVA_HOME/d' \
-      -e '/export NUTCH_CONF_DIR/d' \
-      -e '/export URLS_DIR/d' \
-      -e '/export CRAWL_DB/d' \
-      -e '/export LINK_DB/d' \
-      -e '/export SEGMENTS/d' \
-      -e '/export SOLR_HOME_DIR/d' \
-      -e '/alias solr=/d' \
-      -e '/alias nutch=/d' \
-      .profile
-    echo 'export JAVA_HOME=$(readlink -f /usr/bin/java | sed "s:bin/java::")' >>.profile
-    echo 'export NUTCH_CONF_DIR=#{nutch_conf_dir}' >>.profile
-    echo 'export URLS_DIR=#{nutch_urls_dir}' >>.profile
-    echo 'export CRAWL_DB=#{crawl_dir}/crawldb' >>.profile
-    echo 'export LINK_DB=#{crawl_dir}/linkdb' >>.profile
-    echo 'export SEGMENTS_DIR=#{crawl_dir}/segments' >>.profile
-    echo 'export SOLR_HOME_DIR=#{solr_home_dir}' >>.profile
-    echo 'alias solr="#{solr_command}"' >>.profile
-    echo 'alias nutch="#{nutch_command}"' >>.profile
-  SHELL
-
   config.vm.provision 'clone', type: 'shell', privileged: false, inline: <<-SHELL
     # echo "Copying distribution to our SOLR_HOME_DIR #{solr_home_dir}"
     # [ -d #{solr_home_dir} ] && rm -rf #{solr_home_dir}
