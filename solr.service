@@ -1,0 +1,15 @@
+[Unit]
+Description=Run Solr on Vagrant box.
+
+[Service]
+# Suggested by a comment at: https://coderwall.com/p/1uwfhw/launch-upstart-services-after-vagrant-mount
+
+User=vagrant
+Group=vagrant
+ExecStart=/home/vagrant/solr-4.10.3/bin/solr start -f -s /vagrant/solr
+ExecStop=/home/vagrant/solr-4.10.3/bin/solr stop -p 8983
+Restart=on-failure
+RestartSec=20
+
+[Install]
+WantedBy=multi-user.target

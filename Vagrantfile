@@ -105,9 +105,6 @@ Vagrant.configure(2) do |config|
       -e '80s/false/true/' #{nutch_template_schema} >#{solr_schema}
   SHELL
 
-  config.vm.provision 'init-startup', type: 'shell', inline: 'cp /vagrant/solr.conf /etc/init/'
-  config.vm.provision 'start-solr', type: 'shell', inline: 'start solr'
-
   nutch_seed_file = File.join nutch_urls_dir, 'seed.txt'
   nutch_url_filter = File.join nutch_conf_dir, 'regex-urlfilter.txt'
   nutch_site_file = File.join nutch_conf_dir, 'nutch-site.xml'
@@ -129,20 +126,7 @@ Vagrant.configure(2) do |config|
     echo "Set #{nutch_url_filter} to crawl only within the above domain."
     echo "Recommended, so you don't crawl half the Internet."
     sed -e '$s/^/#/' -e '$a+^http://([a-zA-Z0-9]*\\\\.)*#{Socket.gethostname}:3000/' #{nutch_template_urlfilter} >#{nutch_url_filter}
-  SHELL
 
-  crawl_command_content = <<-EOF
-    #!/bin/bash
-
-    mkdir -p #{crawl_dir}
-    #{crawl_command} #{nutch_urls_dir} #{crawl_dir} http://localhost:8983/solr/cark 2
-  EOF
-
-  config.vm.provision 'make-crawl-command', type: 'shell', privileged: false, inline: <<-SHELL
-    mkdir -p bin
-    cd bin
-    echo '#{crawl_command_content}' >crawl
-    chmod a+x crawl
     echo "You can now log in to your VM with 'vagrant ssh',"
     echo "and crawl http://#{Socket.gethostname}:3000/ by running 'crawl'."
   SHELL
