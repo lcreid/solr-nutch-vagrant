@@ -15,22 +15,20 @@ You may want to try the [latest version of Vagrant](https://www.vagrantup.com/do
 
 ## The Vagrant Machine
 
-    git clone https://github.com/lcreid/solr-nutch-vagrant.git
-    cd solr-nutch-vagrant
-    vagrant up
+    vagrant init 'jadesystems/solr-nutch'; vagrant up
 
-The `vagrant up` step takes a long time the first time -- about 10 minutes for me with a relatively fast Internet connection. That's because it has to download a whole Ubuntu 14.04 virtual machine, then the Java JRE. Finally, the Solr and Nutch downloads themselves are a decent size.
+The `vagrant up` step takes a little while the first time -- about 10 minutes for me with a relatively fast Internet connection. That's because it has to download a whole Ubuntu 16.04 virtual machine, with the Java JRE and the Solr and Nutch software.
 
-Once you're done downloading and installing, you can test that Solr is running by browsing to `localhost:8983/solr`. Through the magic of Vagrant, your requests will actually be sent to the Vagrant box's port 8983, which is the default Solr port for queries. Don't be too quick, however. It takes Solr a minute or two to get running enough to respond to the request.
+Once the Vagrant machine is running, it takes a few minutes (yes minutes) for Solr to start. You can check that it's running by browsing to `localhost:8983/solr` on the host machine (your desktop or laptop). Through the magic of Vagrant, your requests will actually be sent to the Vagrant box's port 8983, which is the default Solr port for queries. If it's not running yet, wait a bit longer. If it's still not running in five minutes, something is probably wrong (unless you have a really slow computer).
 
 If you try a search, you won't get any documents yet. You have to crawl the web site first.
 
 ## Configuring the URL to Crawl
-You can ignore this section if the web site you want to search is on the host machine's port 3000 (e.g. being served by [Mongrel](https://rubygems.org/gems/mongrel/versions/1.1.5), like [Rails](http://rubyonrails.org) or [Nanoc](http://nanoc.ws)).
+You can ignore this section if the web site you want to search is on the host machine's port 3000 (e.g. being served by [Puma](http://puma.io/) or [Mongrel](https://rubygems.org/gems/mongrel/versions/1.1.5), like [Rails](http://rubyonrails.org) or [Nanoc](http://nanoc.ws)).
 
 First, edit `nutch/urls/seed.txt`. Change the domain name and port to the site you want to crawl. If you're hosting the site on the same machine as you're hosting the Vagrant machine, you can leave the domain. If your web server is answering on a port other than 3000, you'll have to change the port.
 
-Note that you can't say `localhost`, because it's going to be interpreted on the Vagrant machine. `localhost` will refer to the Vagrant machine, not to the web host you want to crawl.
+Note that you can't say `localhost` for the domain. Because it's going to be interpreted on the Vagrant machine, `localhost` will refer to the Vagrant machine, not to your workstation that hosts the site you want to crawl.
 
 Next, edit `nutch/conf/regex-urlfilter.txt`. Go to the last line, and make the obvious changes to make it consistent with the site you're crawling based on the `seed.txt` file. The spider will crawl only sites that match the regular expressions in this file. The default file provided in this Vagrant machine makes sure you only crawl on the local machine that's hosting the Vagrant machine.
 
@@ -48,10 +46,12 @@ Or log into the guest and do it there:
 
 Now browse to `localhost:8983/solr/#/cark/query`, and do a search to see if you get any documents.
 
-Note that there's no regularly-scheduled crawl set up on this box. The assumption is that you're using this for development, and would probably prefer on-demand crawls. If you want a scheduled crawl, you can add it using `cron` or any other way you're comfortable with. Remember, however, that anything you add to the machine's configuration, you'll have to redo after every time you do a `vagrant destroy`, or any time you create a new machine somewhere else (e.g. a co-worker wants to do the same thing that you're doing).
+Note that there's no regularly-scheduled crawl set up on this box. The assumption is that you're using this for development, and would probably prefer on-demand crawls. If you want a scheduled crawl, you can add it to the solr-nutch machine using `cron` or any other way you're comfortable with. Remember, however, that anything you add to the machine's configuration, you'll have to redo after every time you do a `vagrant destroy`, or any time you create a new machine somewhere else (e.g. a co-worker wants to do the same thing that you're doing).
+
+[There are ways you can preserve or distribute your changes based on this machine, but I haven't documented them yet. You can read the [Vagrant documentation](https://www.vagrantup.com/docs/) for ideas if you're keen.]
 
 ## Starting and Stopping Solr
-If you're messing with Solr configuration files, you may need to start and stop Solr. You can use the standard commands `sudo stop solr` and `sudo start solr`, or even `sudo restart solr`.
+If you're messing with Solr configuration files, you may need to stop and start Solr. You can use the standard commands `sudo systemctl stop solr` and `sudo systemctl start solr`.
 
 ## Using the Search Engine
 To learn how to *use* the Solr search engine from your own site, try the [Solr Quickstart](http://lucene.apache.org/solr/quickstart.html) and the [other Solr documentation](http://lucene.apache.org/solr/resources.html) on-line.
@@ -61,4 +61,4 @@ You can also see the code for the [Jade Systems web site](https://github.com/lcr
 # Support
 You can report problems or contribute to this project by submitting an issue to the [Github issue tracker](https://github.com/lcreid/solr-nutch-vagrant/issues). I'm happy to entertain pull requests, but it's best to submit an issue first, so we can discuss before you run off and do a lot of work.
 
-This machine is built on Ubuntu Server 14.04 with Solr 4.10.3 and Nutch 1.9.
+This machine is built on Ubuntu Server 16.04 with Solr 4.10.3 and Nutch 1.9.

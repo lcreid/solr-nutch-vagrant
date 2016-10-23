@@ -23,11 +23,11 @@ sudo apt-get -y install openjdk-8-jre-headless
 
 wget -nv -N "http://archive.apache.org/dist/lucene/solr/4.10.3/solr-4.10.3.tgz"
 tar -xf "solr-4.10.3.tgz"
-wget -nv -N "http://archive.apache.org/dist/nutch/1.9/apache-nutch-1.9-bin.tar.gz"
-tar -xf "apache-nutch-1.9-bin.tar.gz"
+wget -nv -N "http://archive.apache.org/dist/nutch/1.11/apache-nutch-1.11-bin.tar.gz"
+tar -xf "apache-nutch-1.11-bin.tar.gz"
 
 solr_distribution_dir="/home/vagrant/solr-4.10.3"
-nutch_distribution_dir="/home/vagrant/apache-nutch-1.9"
+nutch_distribution_dir="/home/vagrant/apache-nutch-1.11"
 
 solr_home_dir="/vagrant/solr"
 solr_command="$solr_distribution_dir/bin/solr"
