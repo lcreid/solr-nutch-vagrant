@@ -52,7 +52,7 @@ cat >"$VAGRANT_CRAWL_COMMAND" <<-EOF
   #!/bin/bash
 
   mkdir -p "$crawl_dir"
-  "$crawl_command" "$nutch_urls_dir" "$crawl_dir" http://localhost:8983/solr/cark 2
+  "$crawl_command" -i -D solr.server.url=http://localhost:8983/solr/cark "$nutch_urls_dir" "$crawl_dir" 2
 EOF
 chmod a+x "$VAGRANT_CRAWL_COMMAND"
 

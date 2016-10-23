@@ -51,35 +51,6 @@ Vagrant.configure(2) do |config|
 
   solr_distribution_dir = '/home/vagrant/solr-4.10.3'
   nutch_distribution_dir = '/home/vagrant/apache-nutch-1.11'
-=======
-  config.vm.provision "messages",
-    type: "shell",
-    privileged: false,
-    inline: 'echo "For support, see: https://github.com/lcreid/solr-nutch-vagrant"'
-
-  # solr_url = "http://apache.mirror.vexxhost.com/lucene/solr/5.0.0/solr-5.0.0.tgz"
-  # nutch_url = "http://apache.parentingamerica.com/nutch/1.9/apache-nutch-1.9-bin.tar.gz"
-  # solr_file = File.basename solr_url
-  # nutch_file = File.basename nutch_url
-
-  config.vm.provision "java-installs",
-    type: "shell",
-    inline: <<-SHELL
-      sudo apt-get update
-      sudo apt-get -y install openjdk-7-jdk
-    SHELL
-
-  solr_distribution_dir = "/home/vagrant/solr-4.10.3"
-  nutch_distribution_dir = "/home/vagrant/apache-nutch-1.11"
-
-  config.vm.provision "apache-installs", type: "shell", privileged: false, inline: <<-SHELL
-    echo Downloading and installing Apache software
-    wget -nv -N "http://archive.apache.org/dist/lucene/solr/4.10.3/solr-4.10.3.tgz"
-    tar -xf "solr-4.10.3.tgz"
-    wget -nv -N "http://apache.mirrors.tds.net/nutch/1.11/apache-nutch-1.11-bin.tar.gz"
-    tar -xf "apache-nutch-1.11-bin.tar.gz"
-  SHELL
->>>>>>> master
 
   solr_home_dir = '/vagrant/solr'
   solr_command = File.join solr_distribution_dir, 'bin/solr'
@@ -87,8 +58,8 @@ Vagrant.configure(2) do |config|
   nutch_home_dir = '/vagrant/nutch'
   nutch_conf_dir = File.join nutch_home_dir, 'conf'
   nutch_urls_dir = File.join nutch_home_dir, 'urls'
-  # crawl-dir has to be on the local drive of the Vagrant machine. I spend
-  # weeks chasing a problems that was because it was on the shared device
+  # crawl-dir has to be on the local drive of the Vagrant machine. I spent
+  # weeks chasing a problem that was because it was on the shared device
   # (/vagrant/...)
   crawl_dir = '/home/vagrant/crawl-dir'
 
