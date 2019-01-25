@@ -1,3 +1,5 @@
+# This project is not currently receiving updates. Thanks for your interest.
+
 # solr-nutch-vagrant
 
 This is a Vagrantfile to create a [Vagrant](https://www.vagrantup.com/) virtual machine running the [Nutch](http://nutch.apache.org/) web crawler, and storing the results of the crawl in the [Solr](http://lucene.apache.org/solr/) search engine. It's meant for web site developers who need to develop and test search functionality on their web site. You can run this virtual machine on the machine where you're developing the web site. You can test all the search functionality of your site against a real search engine.
