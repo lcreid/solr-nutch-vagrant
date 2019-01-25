@@ -88,7 +88,7 @@ Vagrant.configure(2) do |config|
 
   config.vm.provision "apache-installs", type: "shell", privileged: false, inline: <<-SHELL
     echo Downloading and installing Apache software
-    wget -nv -N "http://archive.apache.org/dist/lucene/solr/4.10.3/"
+    wget -nv -N "http://archive.apache.org/dist/lucene/solr/4.10.3/solr-4.10.3.tgz"
     tar -xf "solr-4.10.3.tgz"
     wget -nv -N "http://archive.apache.org/dist/nutch/1.11/apache-nutch-1.11-bin.tar.gz"
     tar -xf "apache-nutch-1.11-bin.tar.gz"
