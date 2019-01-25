@@ -14,7 +14,7 @@ Vagrant.configure(2) do |config|
 
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://atlas.hashicorp.com/search.
-  config.vm.box = "ubuntu/trusty64"
+  config.vm.box = "ubuntu/xenial64"
 
   # Disable automatic box update checking. If you disable this, then
   # boxes will only be checked for updates when the user runs
@@ -80,17 +80,17 @@ Vagrant.configure(2) do |config|
     type: "shell",
     inline: <<-SHELL
       sudo apt-get update
-      sudo apt-get -y install openjdk-7-jdk
+      sudo apt-get -y install default-jdk
     SHELL
 
-  solr_distribution_dir = "/home/vagrant/solr-4.10.3"
-  nutch_distribution_dir = "/home/vagrant/apache-nutch-1.11"
+  solr_distribution_dir = "/home/ubuntu/solr-4.10.3"
+  nutch_distribution_dir = "/home/ubuntu/apache-nutch-1.11"
 
   config.vm.provision "apache-installs", type: "shell", privileged: false, inline: <<-SHELL
     echo Downloading and installing Apache software
-    wget -nv -N "http://archive.apache.org/dist/lucene/solr/4.10.3/solr-4.10.3.tgz"
+    wget -nv -N "http://archive.apache.org/dist/lucene/solr/4.10.3/"
     tar -xf "solr-4.10.3.tgz"
-    wget -nv -N "http://apache.mirrors.tds.net/nutch/1.11/apache-nutch-1.11-bin.tar.gz"
+    wget -nv -N "http://archive.apache.org/dist/nutch/1.11/apache-nutch-1.11-bin.tar.gz"
     tar -xf "apache-nutch-1.11-bin.tar.gz"
   SHELL
 
@@ -103,7 +103,7 @@ Vagrant.configure(2) do |config|
   # crawl-dir has to be on the local drive of the Vagrant machine. I spend
   # weeks chasing a problems that was because it was on the shared device
   # (/vagrant/...)
-  crawl_dir = "/home/vagrant/crawl-dir"
+  crawl_dir = "/home/ubuntu/crawl-dir"
 
   nutch_bin = File.join nutch_home_dir, "bin"
   crawl_command = File.join nutch_bin, "crawl"
@@ -173,7 +173,7 @@ Vagrant.configure(2) do |config|
   SHELL
 
   config.vm.provision "init-startup", type: "shell", inline: "cp /vagrant/solr.conf /etc/init/"
-  config.vm.provision "start-solr", type: "shell", inline: "start solr"
+  config.vm.provision "start-solr", type: "shell", inline: "#{start_solr}"
 
   nutch_seed_file = File.join nutch_urls_dir, "seed.txt"
   nutch_url_filter = File.join nutch_conf_dir, "regex-urlfilter.txt"

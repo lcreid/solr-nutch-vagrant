@@ -15,7 +15,9 @@ You may want to try the [latest version of Vagrant](https://www.vagrantup.com/do
 
 ## The Vagrant Machine
 
-    vagrant init 'jadesystems/solr-nutch'; vagrant up
+    git clone https://github.com/lcreid/solr-nutch-vagrant.git
+    cd solr-nutch-vagrant
+    vagrant up
 
 The `vagrant up` step takes a little while the first time -- about 10 minutes for me with a relatively fast Internet connection. That's because it has to download a whole Ubuntu 16.04 virtual machine, with the Java JRE and the Solr and Nutch software.
 
