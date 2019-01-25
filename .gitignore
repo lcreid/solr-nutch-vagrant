@@ -14,6 +14,7 @@ hs_err_pid*
 solr/
 nutch/
 .vagrant
+Vagrantfile
 authorized_keys
 package.box
 build/Vagrantfile
